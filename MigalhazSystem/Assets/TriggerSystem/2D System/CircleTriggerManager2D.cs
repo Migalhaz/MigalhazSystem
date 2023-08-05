@@ -41,7 +41,7 @@ namespace Trigger.System2D.Manager
         {
             foreach (CircleTrigger2D trigger in triggers)
             {
-                if (trigger.DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmos) continue;
+                if (trigger.m_DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmos) continue;
                 trigger.DrawTrigger(transform.position);
             }
         }
@@ -50,7 +50,7 @@ namespace Trigger.System2D.Manager
         {
             foreach (CircleTrigger2D trigger in triggers)
             {
-                if (trigger.DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmosSelect) continue;
+                if (trigger.m_DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmosSelect) continue;
                 trigger.DrawTrigger(transform.position);
             }
         }

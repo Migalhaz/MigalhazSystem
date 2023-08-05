@@ -9,20 +9,20 @@ namespace Trigger
     public abstract class BasicTriggerSystem
     {
         #region Variables
-        [SerializeField] string triggerTag = "New Trigger";
-        [SerializeField] LayerMask triggerLayerMask;
-        [SerializeField] Transform centerObject;
-        [SerializeField] TriggerEvents triggerEvents;
-        [SerializeField] DrawTrigger drawSettings = new DrawTrigger();
+        [SerializeField] string m_triggerTag = "New Trigger";
+        [SerializeField] LayerMask m_triggerLayerMask;
+        [SerializeField] Transform m_centerObject;
+        [SerializeField] TriggerEvents m_triggerEvents;
+        [SerializeField] DrawTrigger m_drawSettings = new DrawTrigger();
 
 
         #region Getters
-        public string TriggerTag => triggerTag;
-        public LayerMask TriggerLayerMask => triggerLayerMask;
-        public Transform CenterObject => centerObject;
-        public bool entered { get; private set; }
-        public TriggerEvents TriggerEvents => triggerEvents;
-        public DrawTrigger DrawSettings => drawSettings;
+        public string m_TriggerTag => m_triggerTag;
+        public LayerMask m_TriggerLayerMask => m_triggerLayerMask;
+        public Transform m_CenterObject => m_centerObject;
+        public bool m_entered { get; private set; }
+        public TriggerEvents m_TriggerEvents => m_triggerEvents;
+        public DrawTrigger m_DrawSettings => m_drawSettings;
         #endregion
 
         #endregion
@@ -31,28 +31,28 @@ namespace Trigger
 
         public BasicTriggerSystem()
         {
-            triggerTag = "New Trigger";
-            drawSettings = new DrawTrigger();
+            m_triggerTag = "New Trigger";
+            m_drawSettings = new DrawTrigger();
         }
 
         /// <summary>
         /// Checks the trigger tag against the defined tag.
         /// </summary>
-        /// <param name="_tag">Tag to compare.</param>
+        /// <param name="tag">Tag to compare.</param>
         /// <returns>Returns true if trigger has the same tag. Returns false otherwise.</returns>
-        public virtual bool CompareTag(string _tag)
+        public virtual bool CompareTag(string tag)
         {
-            return Equals(_tag, triggerTag);
+            return Equals(tag, m_triggerTag);
         }
 
         #region In Trigger Methods
         /// <summary>
         /// Checks if there's anything in trigger.
         /// </summary>
-        /// <param name="_position">Trigger's center. (This parameter will be ignored if trigger has a Center Object defined)</param>
+        /// <param name="position">Trigger's center. (This parameter will be ignored if trigger has a Center Object defined)</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns>Returns true if there's anything in trigger. Returns false otherwise.</returns>
-        public abstract bool InTrigger(Vector3 _position, bool callbacks = true);
+        public abstract bool InTrigger(Vector3 position, bool callbacks = true);
 
         /// <summary>
         /// Checks if there's anything in trigger.
@@ -180,26 +180,26 @@ namespace Trigger
         {
             if (_isIn)
             {
-                if (entered)
+                if (m_entered)
                 {
-                    triggerEvents.OnTriggerStayInsideInvoke();
+                    m_triggerEvents.OnTriggerStayInsideInvoke();
                 }
                 else
                 {
-                    entered = true;
-                    triggerEvents.OnTriggerEnterInvoke();
+                    m_entered = true;
+                    m_triggerEvents.OnTriggerEnterInvoke();
                 }
             }
             else
             {
-                if (entered)
+                if (m_entered)
                 {
-                    entered = false;
-                    triggerEvents.OnTriggerExitInvoke();
+                    m_entered = false;
+                    m_triggerEvents.OnTriggerExitInvoke();
                 }
                 else
                 {
-                    triggerEvents.OnTriggerStayOutsideInvoke();
+                    m_triggerEvents.OnTriggerStayOutsideInvoke();
                 }
             }
         }

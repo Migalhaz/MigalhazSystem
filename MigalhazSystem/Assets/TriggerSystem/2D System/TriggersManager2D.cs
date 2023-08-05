@@ -36,13 +36,13 @@ namespace Trigger.System2D.Manager
         {
             foreach (BoxTrigger2D trigger in boxes)
             {
-                if (trigger.DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmos) continue;
+                if (trigger.m_DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmos) continue;
                 trigger.DrawTrigger(transform.position);
             }
 
             foreach (CircleTrigger2D trigger in circles)
             {
-                if (trigger.DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmos) continue;
+                if (trigger.m_DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmos) continue;
                 trigger.DrawTrigger(transform.position);
             }
         }
@@ -51,13 +51,13 @@ namespace Trigger.System2D.Manager
         {
             foreach (BoxTrigger2D trigger in boxes)
             {
-                if (trigger.DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmosSelect) continue;
+                if (trigger.m_DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmosSelect) continue;
                 trigger.DrawTrigger(transform.position);
             }
 
             foreach (CircleTrigger2D trigger in circles)
             {
-                if (trigger.DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmosSelect) continue;
+                if (trigger.m_DrawSettings.DrawMethod != Core.DrawTrigger.DrawMode.OnDrawGizmosSelect) continue;
                 trigger.DrawTrigger(transform.position);
             }
         }
