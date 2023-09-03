@@ -36,6 +36,59 @@ namespace Trigger.System2D
         {
             SetTriggerOffset(new Vector2(m_triggerOffset.x, -m_triggerOffset.y));
         }
+
+        /// <summary>
+        /// Checks if there's anything in trigger.
+        /// </summary>
+        /// <param name="collider2D">Trigger's center by collider2D. (This parameter will be ignored if trigger has a Center Object defined)</param>
+        /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
+        /// <returns>Returns true if there's anything in trigger. Returns false otherwise.</returns>
+        public abstract bool InTrigger(Collider2D collider2D, bool callbacks = true);
+
+        /// <summary>
+        /// Checks if there's anything in trigger and get all colliders2D in It.
+        /// </summary>
+        /// <param name="position">Trigger's center. (This parameter will be ignored if trigger has a Center Object defined)</param>
+        /// <param name="collider2Ds">List of colliders2D in trigger</param>
+        /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
+        /// <returns></returns>
+        public abstract bool InTrigger(Vector3 position, out List<Collider2D> collider2Ds, bool callbacks = true);
+        /// <summary>
+        /// Checks if there's anything in trigger and get all colliders2D in It.
+        /// </summary>
+        /// <param name="transform">Trigger's center by transform. (This parameter will be ignored if trigger has a Center Object defined)</param>
+        /// <param name="collider2Ds">List of colliders2D in trigger</param>
+        /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
+        /// <returns></returns>
+        public abstract bool InTrigger(Transform transform, out List<Collider2D> collider2Ds, bool callbacks = true);
+        /// <summary>
+        /// Checks if there's anything in trigger and get all colliders2D in It.
+        /// </summary>
+        /// <param name="gameObject">Trigger's center by game object. (This parameter will be ignored if trigger has a Center Object defined)</param>
+        /// <param name="collider2Ds">List of colliders2D in trigger</param>
+        /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
+        /// <returns></returns>
+        public abstract bool InTrigger(GameObject gameObject, out List<Collider2D> collider2Ds, bool callbacks = true);
+        /// <summary>
+        /// Checks if there's anything in trigger and get all colliders2D in It.
+        /// </summary>
+        /// <param name="gameObject">Trigger's center by game object. (This parameter will be ignored if trigger has a Center Object defined)</param>
+        /// <param name="collider2Ds">List of colliders2D in trigger</param>
+        /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
+        /// <returns></returns>
+        public abstract bool InTrigger(Collider2D collider2D, out List<Collider2D> collider2Ds, bool callbacks = true);
+
+
+        /// <summary>
+        /// Checks if there's something in trigger and gets a component from it.
+        /// </summary>
+        /// <typeparam name="T">A game object component.</typeparam>
+        /// <param name="collider2D">Trigger's center by collider2D. (This parameter will be ignored if trigger has a Center Object defined)</param>
+        /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
+        /// <param name="debugError">Debug failed tries to get <typeparamref name="T"/> when it's true. (True by default)</param>
+        /// <returns>Returns the component got by trigger.</returns>
+        public abstract T InTrigger<T>(Collider2D collider2D, bool callbacks = true, bool debugError = true) where T : Component;
+        public abstract void DrawTrigger(Collider2D collider2D);
         #endregion
     }
 
