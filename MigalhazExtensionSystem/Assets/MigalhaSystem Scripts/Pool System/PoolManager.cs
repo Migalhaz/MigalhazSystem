@@ -103,9 +103,10 @@ namespace MigalhaSystem.Pool
 
         public void ReturnAlllObjects()
         {
-            m_freeObjects.AddRange(m_inUseObjects);
-            m_inUseObjects.Clear();
-            m_freeObjects.ForEach(x => x.SetActive(false));
+            m_freeObjects.ForEach(x => ReturnObject(x));
+            //m_freeObjects.AddRange(m_inUseObjects);
+            //m_inUseObjects.Clear();
+            //m_freeObjects.ForEach(x => x.SetActive(false));
         }
 
         

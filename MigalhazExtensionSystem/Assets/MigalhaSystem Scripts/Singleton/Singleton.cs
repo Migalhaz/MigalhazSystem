@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace MigalhaSystem
 {
-    public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
+    public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {
         [SerializeField] bool m_DDOL;
         private static T instance;

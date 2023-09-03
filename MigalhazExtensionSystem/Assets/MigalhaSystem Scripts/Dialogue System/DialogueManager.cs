@@ -1,19 +1,28 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace MigalhaSystem.DialogueSystem
 {
     public class DialogueManager : MonoBehaviour
     {
+        [Header("Dialogue Settings")]
         [SerializeField] Languagekey m_languageKey;
-        [SerializeField] UnityEngine.UI.RawImage m_characterIcon;
-        [SerializeField] TMPro.TextMeshProUGUI m_dialogueTextBox;
-        [SerializeField] TMPro.TextMeshProUGUI m_characterNameTextBox;
         [SerializeField, Range(0, 1f)] float m_typeSpeed;
+        float m_currentTypeSpeed => Mathf.Abs(1f - m_typeSpeed) * 0.1f;
+
+        [Header("Dialogue UI")]
+        [SerializeField] UnityEngine.UI.RawImage m_characterIcon;
+        [SerializeField] TextMeshProUGUI m_dialogueTextBox;
+        [SerializeField] TextMeshProUGUI m_characterNameTextBox;
+        [SerializeField] List<UnityEngine.UI.Button> m_buttons;
+
         int m_currentIndex;
         DialogueScriptableObject m_currentDialogue;
         bool m_typing;
+
+        bool HaveLines() => m_currentIndex < m_currentDialogue.m_Lines.Count;
 
         private void Awake()
         {
@@ -21,8 +30,11 @@ namespace MigalhaSystem.DialogueSystem
             HideUI();
         }
 
-        float m_currentTypeSpeed => Mathf.Abs(1f - m_typeSpeed) * 0.1f;
-
+        public void SetLanguage(Languagekey languageKey)
+        {
+            m_languageKey = languageKey;
+        }
+        
         void SetCurrentDialogue(DialogueScriptableObject dialogue)
         {
             m_currentDialogue = dialogue;
@@ -57,6 +69,7 @@ namespace MigalhaSystem.DialogueSystem
 
         public void StartDialogue(DialogueScriptableObject dialogue)
         {
+            HideUI();
             m_currentIndex = 0;
             SetCurrentDialogue(dialogue);
             TypeExec();
@@ -74,6 +87,11 @@ namespace MigalhaSystem.DialogueSystem
 
             if (!HaveLines())
             {
+                if (m_currentDialogue.m_Choice is not null)
+                {
+                    SetChoices();
+                    return;
+                }
                 FinishDialogue();
                 return;
             }
@@ -100,8 +118,6 @@ namespace MigalhaSystem.DialogueSystem
             }
         }
 
-        bool HaveLines() => m_currentIndex < m_currentDialogue.m_Lines.Count;
-
         public void FinishDialogue()
         {
             StopAllCoroutines();
@@ -117,11 +133,29 @@ namespace MigalhaSystem.DialogueSystem
             StartCoroutine(Type());
         }
 
+        void SetChoices()
+        {
+            for (int i = 0; i < m_buttons.Count; i++)
+            {
+                if (i >= m_currentDialogue.m_Choice.m_Choice.Count)
+                {
+                    break;
+                }
+                m_buttons[i].gameObject.SetActive(true);
+                Choice currentChoice = m_currentDialogue.m_Choice.m_Choice[i];
+                m_buttons[i].GetComponentInChildren<TextMeshProUGUI>().text = currentChoice.GetChoiceText(m_languageKey).m_ChoiceText;
+                m_buttons[i].onClick.AddListener(FinishDialogue);
+                m_buttons[i].onClick.AddListener(currentChoice.m_CurrentChoiceEvent.Invoke);
+            }
+        }
+
         void HideUI()
         {
             m_dialogueTextBox.gameObject.SetActive(false);
             m_characterNameTextBox.gameObject.SetActive(false);
             m_characterIcon.gameObject.SetActive(false);
+
+            m_buttons.ForEach(x => x.gameObject.SetActive(false));
         }
 
         void ShowUI()
