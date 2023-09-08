@@ -32,5 +32,10 @@ namespace MigalhaSystem.ScriptableEvents
             _event.ResetEvents();
             return _event;
         }
+
+        public void AddListener(Action _action){ action += _action; }
+
+        public void RemoveListener(Action _action) {  action -= _action; }
+        public void Clear() { ResetEvents(); }
     }
 }

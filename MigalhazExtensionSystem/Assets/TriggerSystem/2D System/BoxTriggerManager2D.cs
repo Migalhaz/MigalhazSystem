@@ -7,7 +7,7 @@ namespace Trigger.System2D.Manager
     {
         [SerializeField] Core.UpdateMethod m_updateMethod = Core.UpdateMethod.FixedUpdate;
         [SerializeField] List<BoxTrigger2D> m_triggers = new List<BoxTrigger2D>() { new BoxTrigger2D() };
-
+        public List<BoxTrigger2D> m_Triggers => m_triggers;
         void Update()
         {
             CallTrigger(Core.UpdateMethod.Update);

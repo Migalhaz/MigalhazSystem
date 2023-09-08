@@ -178,7 +178,7 @@ namespace MigalhaSystem.Extensions
 
         #region WaitForSeconds
         static Dictionary<float, WaitForSeconds> m_waitForSecondsDictionary = new Dictionary<float, WaitForSeconds>();
-        public static WaitForSeconds m_GetWaitForSeconds(float seconds)
+        public static WaitForSeconds GetWaitForSeconds(float seconds)
         {
             if (m_waitForSecondsDictionary.TryGetValue(seconds, out WaitForSeconds wait)) return wait;
             m_waitForSecondsDictionary[seconds] = new WaitForSeconds(seconds);
