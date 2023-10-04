@@ -5,26 +5,31 @@ using UnityEngine;
 namespace MigalhaSystem.StateMachine
 {
     [DisallowMultipleComponent]
-    public class AbstractEnemyStateMachineController : MonoBehaviour
+    public class AbstractStateMachineController : MonoBehaviour
     {
         [Header("Components")]
-        protected AbstractEnemyState m_currentState;
-        protected AbstractEnemyState m_lastState;
+        protected AbstractState m_currentState;
+        protected AbstractState m_lastState;
         
         #region Getters
-        public AbstractEnemyState m_CurrentState => m_currentState;
-        public AbstractEnemyState m_LastState => m_lastState;
+        public AbstractState m_CurrentState => m_currentState;
+        public AbstractState m_LastState => m_lastState;
         #endregion
         protected virtual void Update()
         {
             m_currentState?.UpdateState(this);
         }
 
+        protected virtual void FixedUpdate()
+        {
+            m_currentState?.FixedUpdateState(this);
+        }
+
         /// <summary>
         /// Muda o estado atual do inimigo.
         /// </summary>
         /// <param name="newState">Novo estado do inimigo.</param>
-        public virtual void SwitchState(AbstractEnemyState newState)
+        public virtual void SwitchState(AbstractState newState)
         {
             if (m_currentState is not null)
             {
@@ -39,7 +44,7 @@ namespace MigalhaSystem.StateMachine
             m_currentState.EnterState(this);
         }
 
-        public virtual void ForceSwitchState(AbstractEnemyState newState)
+        public virtual void ForceSwitchState(AbstractState newState)
         {
             if (m_currentState is not null)
             {
@@ -50,31 +55,12 @@ namespace MigalhaSystem.StateMachine
             m_currentState.EnterState(this);
         }
 
-        public virtual void SwitchStateByBool(bool verification, AbstractEnemyState trueState, AbstractEnemyState falseState)
-        {
-            if (verification)
-            {
-                if (m_currentState.GetType() != trueState.GetType())
-                {
-                    SwitchState(trueState);
-                }
-            }
-            else
-            {
-                if (m_currentState.GetType() != falseState.GetType())
-                {
-                    SwitchState(falseState);
-                }
-
-            }
-        }
-
-        public bool CheckCurrentState<T>() where T : AbstractEnemyState
+        public bool CheckCurrentState<T>() where T : AbstractState
         {
             return m_currentState is T;
         }
 
-        public bool CheckLastState<T>() where T : AbstractEnemyState
+        public bool CheckLastState<T>() where T : AbstractState
         {
             return m_lastState is T;
         }

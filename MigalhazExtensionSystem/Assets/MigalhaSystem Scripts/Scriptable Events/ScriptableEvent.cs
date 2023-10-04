@@ -38,4 +38,43 @@ namespace MigalhaSystem.ScriptableEvents
         public void RemoveListener(Action _action) {  action -= _action; }
         public void Clear() { ResetEvents(); }
     }
+
+    public abstract class Observer : MonoBehaviour
+    {
+        protected virtual void InvokeEvent(ScriptableEvent scriptableEvent)
+        {
+            scriptableEvent.Invoke();
+        }
+    }
+
+    public abstract class Listener : MonoBehaviour
+    {
+        Dictionary<ScriptableEvent, List<Action>> m_scriptableEvents;
+        protected void AddEvent(ScriptableEvent scriptableEvent, Action action)
+        {
+            scriptableEvent += action;
+            if (m_scriptableEvents.ContainsKey(scriptableEvent))
+            {
+                m_scriptableEvents[scriptableEvent].Add(action);
+            }
+            else
+            {
+
+                m_scriptableEvents.Add(scriptableEvent, new List<Action>() { action });
+            }
+        }
+        
+        protected void ClearEvents()
+        {
+            foreach (var e in m_scriptableEvents)
+            {
+                e.Value.ForEach(x => e.Key.RemoveListener(x));
+            }
+        }
+
+        protected void OnDisable()
+        {
+            ClearEvents();
+        }
+    }
 }

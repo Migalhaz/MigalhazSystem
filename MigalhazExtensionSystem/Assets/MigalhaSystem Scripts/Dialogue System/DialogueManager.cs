@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace MigalhaSystem.DialogueSystem
@@ -43,12 +44,16 @@ namespace MigalhaSystem.DialogueSystem
         DialogueLine GetCurrentLine(bool debugErrors = true)
         {
             if (m_currentDialogue is null) return null;
-            return m_currentDialogue.m_Lines[m_currentIndex].GetDialogueLine(m_languageKey, debugErrors);
+            return GetCurrentDialogueLineScriptableObject().GetDialogueLine(m_languageKey, debugErrors);
+        }
+        DialogueLineScriptableObject GetCurrentDialogueLineScriptableObject()
+        {
+            return m_currentDialogue.m_Lines[m_currentIndex];
         }
 
         Texture GetCurrentCharacterIcon()
         {
-            return m_currentDialogue.m_Lines[m_currentIndex].m_DialogueIcon.texture;
+            return GetCurrentDialogueLineScriptableObject().m_DialogueIcon.texture;
         }
 
         IEnumerator Type()
@@ -72,6 +77,7 @@ namespace MigalhaSystem.DialogueSystem
             HideUI();
             m_currentIndex = 0;
             SetCurrentDialogue(dialogue);
+            m_currentDialogue.StartDialogueEvent();
             TypeExec();
         }
 
@@ -83,8 +89,9 @@ namespace MigalhaSystem.DialogueSystem
                 BreakType();
                 return;
             }
+            GetCurrentDialogueLineScriptableObject().InvokeLineEvent();
             IncreaseIndex();
-
+            
             if (!HaveLines())
             {
                 if (m_currentDialogue.m_Choice is not null)
@@ -107,6 +114,10 @@ namespace MigalhaSystem.DialogueSystem
 
         void IncreaseIndex()
         {
+            if (!HaveLines())
+            {
+                return;
+            }
             do { m_currentIndex++; } 
             while (WhileLogic());
 
@@ -120,6 +131,7 @@ namespace MigalhaSystem.DialogueSystem
 
         public void FinishDialogue()
         {
+            m_currentDialogue.FinishDialogueEvent();
             StopAllCoroutines();
             m_currentDialogue = null;
             m_currentIndex = 0;
@@ -144,8 +156,20 @@ namespace MigalhaSystem.DialogueSystem
                 m_buttons[i].gameObject.SetActive(true);
                 Choice currentChoice = m_currentDialogue.m_Choice.m_Choice[i];
                 m_buttons[i].GetComponentInChildren<TextMeshProUGUI>().text = currentChoice.GetChoiceText(m_languageKey).m_ChoiceText;
-                m_buttons[i].onClick.AddListener(FinishDialogue);
-                m_buttons[i].onClick.AddListener(currentChoice.m_CurrentChoiceEvent.Invoke);
+                SetupButton(currentChoice, m_buttons[i]);
+            }
+        }
+
+        void SetupButton(Choice currentChoice, UnityEngine.UI.Button button)
+        {
+            button.onClick.AddListener(FinishDialogue);
+            button.onClick.AddListener(currentChoice.m_CurrentChoiceEvent.Invoke);
+            button.onClick.AddListener(ClearButton);
+
+            void ClearButton()
+            {
+                button.onClick.RemoveListener(FinishDialogue);
+                button.onClick.RemoveListener(currentChoice.m_CurrentChoiceEvent.Invoke);
             }
         }
 

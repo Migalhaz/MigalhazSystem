@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using MigalhaSystem.ScriptableEvents;
 
 namespace MigalhaSystem.DialogueSystem
 {
@@ -9,6 +10,7 @@ namespace MigalhaSystem.DialogueSystem
     {
         [SerializeField] Sprite m_dialogueIcon;
         [SerializeField] List<DialogueLine> m_dialogueLine = new() { new() };
+        [SerializeField] ScriptableEvent m_lineEvent;
         public Sprite m_DialogueIcon => m_dialogueIcon;
 
         public DialogueLine GetDialogueLine(Languagekey currentLanguage, bool debugError = true)
@@ -31,6 +33,13 @@ namespace MigalhaSystem.DialogueSystem
                 return null;
             }
             return lines[0];
+        }
+
+        public void InvokeLineEvent()
+        {
+            if (m_lineEvent is null) return;
+            
+            m_lineEvent.Invoke();
         }
     }
 

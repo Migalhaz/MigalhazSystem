@@ -103,6 +103,11 @@ namespace MigalhaSystem.Extensions
         [SerializeField] float m_maxValue;
         public float m_MinValue => m_minValue;
         public float m_MaxValue => m_maxValue;
+        public FloatRange(float _minValue, float _maxValue)
+        {
+            m_minValue = _minValue;
+            m_maxValue = _maxValue;
+        }
         public float GetRandomValue()
         {
             return Random.Range(m_minValue, m_maxValue);
@@ -128,6 +133,13 @@ namespace MigalhaSystem.Extensions
         [SerializeField] int m_maxValue;
         public int m_MinValue => m_minValue;
         public int m_MaxValue => m_maxValue;
+
+        public IntRange(int _minValue, int _maxValue)
+        {
+            m_minValue = _minValue;
+            m_maxValue = _maxValue;
+        }
+
         public int GetRandomValue(bool _maxInclusive = false)
         {
             return Random.Range(m_minValue, m_maxValue + (_maxInclusive ? 1 : 0));
@@ -269,5 +281,28 @@ namespace MigalhaSystem.Extensions
 
         #endregion
 
+        #region CacheGetComponent
+        public static T CacheGetComponent<T>(this GameObject obj, ref T component)
+        {
+            if (component is not null) return component;
+            bool get = obj.TryGetComponent(out T getComponent);
+            if (get)
+            {
+                component = getComponent;
+            }
+            return component;
+        }
+
+        public static T CacheGetComponent<T>(this Component obj, ref T component)
+        {
+            if (component is not null) return component;
+            bool get = obj.TryGetComponent(out T getComponent);
+            if (get)
+            {
+                component = getComponent;
+            }
+            return component;
+        }
+        #endregion
     }
 }
