@@ -13,16 +13,23 @@ namespace MigalhaSystem.Pool
         [SerializeField, Min(1)] int m_poolSize = 1;
         [SerializeField] bool m_expandablePool = false;
         [SerializeField] bool m_destroyExtraObjectsAfterUse;
+        [SerializeField, Min(0)] int m_extraObjectsAllowed;
 
         public string m_PoolTag => m_poolTag;
         public int m_PoolSize => m_poolSize;
         public bool m_ExpandablePool => m_expandablePool;
         public bool m_DestroyExtraObjectsAfterUse => m_destroyExtraObjectsAfterUse;
+        public int m_ExtraObjectsAllowed => m_extraObjectsAllowed;
         public GameObject m_Prefab => m_prefab;
 
         public bool CompareTag(string _tag)
         {
             return m_poolTag.Equals(_tag);
+        }
+
+        public int MaxPoolSize()
+        {
+            return m_poolSize + m_extraObjectsAllowed;
         }
     }
 }

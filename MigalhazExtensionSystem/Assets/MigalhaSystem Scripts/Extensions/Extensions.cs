@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
 namespace MigalhaSystem.Extensions
@@ -166,6 +167,80 @@ namespace MigalhaSystem.Extensions
         }
     }
 
+    [System.Serializable]
+    public class Timer
+    {
+        [Header("Timer Settings")]
+        [SerializeField] bool m_Countdown = true;
+        [SerializeField] FloatRange m_startTimer = new(1, 1);
+        float m_currentTimerValue;
+        [SerializeField] protected UnityEvent m_OnTimerElapsed;
+        public UnityEvent OnTimerElapsed => m_OnTimerElapsed;
+        public FloatRange m_StartTimer => m_startTimer;
+
+        public void ActiveTimer(bool active)
+        {
+            m_Countdown = active;
+        }
+
+
+        public void SetStartTimer(FloatRange newStartTimer)
+        {
+            m_startTimer = newStartTimer;
+        }
+        public void ChangeMinStartTimerValue(float newMinValue)
+        {
+            m_startTimer.ChangeMinValue(newMinValue);
+        }
+
+        public void ChangeMaxStartTimerValue(float newMaxValue)
+        {
+            m_startTimer.ChangeMaxValue(newMaxValue);
+        }
+
+        public void ChangeStartTimerValue(float newMinValue, float newMaxValue)
+        {
+            m_startTimer.ChangeMinValue(newMinValue);
+            m_startTimer.ChangeMaxValue(newMaxValue);
+        }
+
+        public void DecreaseStartTimerValue(float decreaseValue)
+        {
+            m_startTimer.ChangeMinValue(m_startTimer.m_MinValue - decreaseValue);
+            m_startTimer.ChangeMaxValue(m_startTimer.m_MaxValue - decreaseValue);
+        }
+
+        public void DecreaseStartTimerValue(float decreaseMinValue, float decreaseMaxValue)
+        {
+            m_startTimer.ChangeMinValue(m_startTimer.m_MinValue - decreaseMinValue);
+            m_startTimer.ChangeMaxValue(m_startTimer.m_MaxValue - decreaseMaxValue);
+        }
+
+        public virtual void SetupTimer()
+        {
+            m_currentTimerValue = m_startTimer.GetRandomValue();
+        }
+
+        public virtual bool TimerElapse(float deltaTime)
+        {
+            if (!m_Countdown) return false;
+
+            m_currentTimerValue -= deltaTime;
+            if (m_currentTimerValue <= 0)
+            {
+                TimerElapsedAction();
+                return true;
+            }
+
+            return false;
+        }
+
+        public virtual void TimerElapsedAction()
+        {
+            SetupTimer();
+            m_OnTimerElapsed?.Invoke();
+        }
+    }
     public static class MigalhazHelper
     {
         #region Camera

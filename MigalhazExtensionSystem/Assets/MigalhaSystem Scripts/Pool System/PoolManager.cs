@@ -28,7 +28,12 @@ namespace MigalhaSystem.Pool
             return m_poolData.CompareTag(_tag);
         }
 
-        public void Setup(Transform _parent)
+        public bool ComparePoolData(PoolDataScriptableObject _poolData)
+        {
+            return m_poolData == _poolData;
+        }
+
+        public void SetupPool(Transform _parent)
         {
             m_freeObjects = new List<GameObject>();
             m_inUseObjects = new List<GameObject>();
@@ -42,21 +47,38 @@ namespace MigalhaSystem.Pool
             m_freeObjects.Add(newGameObject);
         }
 
-        public GameObject GetFreeGameObject()
+        public GameObject PullObject()
         {
             if (AllowCreateNewObject())
             {
                 CreateObject();
+            }
+            if (!FreeGameObjects())
+            {
+                return null;
             }
 
             GameObject poolGameObject = m_FreeObjects[m_FreeObjects.Count - 1];
             m_freeObjects.Remove(poolGameObject);
             m_inUseObjects.Add(poolGameObject);
             poolGameObject.SetActive(true);
-            return poolGameObject;
-        }
 
-        bool AllowCreateNewObject()
+            IPullable[] pullableArray = poolGameObject.GetComponentsInChildren<IPullable>();
+            if (PullableAvailable())
+            {
+                foreach (IPullable pullableItem in pullableArray)
+                {
+                    pullableItem.OnPull();
+                }
+            }
+
+            bool FreeGameObjects()
+            {
+                if (m_freeObjects == null) return false;
+                if (m_freeObjects.Count <= 0) return false;
+                return true;
+            }
+            bool AllowCreateNewObject()
         {
             if (m_poolParent.childCount <= 0) return true;
             if (m_freeObjects.Count > 0) return false;
@@ -69,47 +91,81 @@ namespace MigalhaSystem.Pool
             }
             return true;
         }
-
-        public List<GameObject> GetAllGameObjects()
+            bool PullableAvailable()
+            {
+                if (pullableArray == null) return false;
+                if (pullableArray.Length <= 0) return false;
+                return true;
+            }
+            return poolGameObject;
+        }
+        public T PullObject<T>() where T : Component
         {
-            List<GameObject> gameObjects = new List<GameObject>();
-            gameObjects.AddRange(m_InUseObjects);
-            gameObjects.AddRange(m_FreeObjects);
+            if (PullObject().TryGetComponent(out T component))
+            {
+                return component;
+            }
+            Debug.LogError($"{typeof(T)} component not found!");
+            return null;
+        }
+
+        public List<GameObject> PullAllObjects()
+        {
+            List<GameObject> gameObjects = new();
+            while (m_freeObjects.Count >= 1)
+            {
+                gameObjects.Add(PullObject());
+            }
+
+            return gameObjects;
+        }
+        public List<T> PullAllObjects<T>() where T : Component
+        {
+            List<T> gameObjects = new();
+            while (m_freeObjects.Count >= 1)
+            {
+                gameObjects.Add(PullObject<T>());
+            }
+
             return gameObjects;
         }
 
-        public List<T> GetAllGameObjects<T>() where T : Component
-        {
-            List<T> t = new();
-            GetAllGameObjects().ForEach(x => t.Add(x.GetComponent<T>()));
-            return t;
-        }
-
-        public void ReturnObject(GameObject _activeGameObject)
+        public void PushObject(GameObject _activeGameObject)
         {
             if (!m_inUseObjects.Contains(_activeGameObject)) return;
-
+            IPushable[] pushableArray = _activeGameObject.GetComponentsInChildren<IPushable>();
+            if (IPushableAvailable())
+            {
+                foreach (IPushable pushableItem in pushableArray)
+                {
+                    pushableItem.OnPush();
+                }
+            }
             m_freeObjects.Add(_activeGameObject);
             m_inUseObjects.Remove(_activeGameObject);
             _activeGameObject.SetActive(false);
 
             if (!m_poolData.m_DestroyExtraObjectsAfterUse) return;
             
-            if (m_poolParent.childCount <= m_poolData.m_PoolSize) return;
+            if (m_poolParent.childCount <= m_poolData.MaxPoolSize()) return;
             UnityEngine.Object.Destroy(_activeGameObject);
             m_freeObjects.Remove(_activeGameObject);
+
+            bool IPushableAvailable()
+            {
+                if (pushableArray == null) return false;
+                if (pushableArray.Length <= 0) return false;
+                return true;
+            }
         }
 
-
-        public void ReturnAlllObjects()
+        public void PushAllObjects()
         {
-            m_freeObjects.ForEach(x => ReturnObject(x));
-            //m_freeObjects.AddRange(m_inUseObjects);
-            //m_inUseObjects.Clear();
-            //m_freeObjects.ForEach(x => x.SetActive(false));
+            while (m_inUseObjects.Count >= 1)
+            {
+                PushObject(m_inUseObjects[0]);
+            }
         }
-
-        
         #endregion
     }
     public class PoolManager : Singleton<PoolManager>
@@ -122,60 +178,134 @@ namespace MigalhaSystem.Pool
 
             foreach (Pool pool in m_pools)
             {
-                pool.Setup(new GameObject($"{pool.m_PoolData.m_PoolTag} Pool").transform);
+                pool.SetupPool(new GameObject($"{pool.m_PoolData.m_PoolTag} Pool").transform);
                 for (int i = 0; i < pool.m_PoolData.m_PoolSize; i++)
                 {
                     pool.CreateObject();
                 }
             }
         }
+        bool PoolCheck(List<Pool> availablePools)
+        {
+            if (availablePools == null)
+            {
+                Debug.LogError("No pool found!");
+                return false;
+            }
+            if (availablePools.Count <= 0)
+            {
+                Debug.LogError("No pool found!");
+                return false;
+            }
+            if (availablePools.Count > 1)
+            {
+                Debug.LogError("More than 1 found!");
+                return false;
+            }
+            return true;       
+        }
         public Pool GetPool(string _poolTag)
         {
-            return m_pools.Find(x => x.CompareTag(_poolTag));
+            //return m_pools.Find(x => x.CompareTag(_poolTag));
+            List<Pool> pools = m_pools.FindAll(x => x.CompareTag(_poolTag));
+            if (!PoolCheck(pools)) return null;
+            return pools[0];
         }
 
         public Pool GetPool(PoolDataScriptableObject _poolData)
         {
-            //return m_pools.Find(x => x.m_PoolData == _poolData);
-            return GetPool(_poolData.m_PoolTag);
+            //return m_pools.Find(x => x.ComparePoolData(_poolTag));
+            List<Pool> pools = m_pools.FindAll(x => x.ComparePoolData(_poolData));
+            if (!PoolCheck(pools)) return null;
+            return pools[0];
         }
 
-        public GameObject GetFreeGameObjectFromPool(string _poolTag)
+        public GameObject PullObject(string _poolTag)
         {
-            return GetPool(_poolTag).GetFreeGameObject();
+            return GetPool(_poolTag).PullObject();
         }
 
-        public GameObject GetFreeGameObjectFromPool(PoolDataScriptableObject _poolTag)
+        public GameObject PullObject(PoolDataScriptableObject _poolData)
         {
-            return GetPool(_poolTag).GetFreeGameObject();
+            return GetPool(_poolData).PullObject();
         }
 
-        public T GetFreeGameObjectFromPool<T>(string _poolTag) where T : Component
+        public T PullObject<T>(string _poolTag) where T : Component
         {
-            GameObject g = GetFreeGameObjectFromPool(_poolTag);
-            if (g == null) return null;
-
-            if (g.TryGetComponent(out T _t))
-            {
-                return _t;
-            }
-
-            return null;
+            return GetPool(_poolTag).PullObject<T>();
         }
 
-        public void ReturnUsingGameObjectToPool(string _poolTag, GameObject _gameObject)
+        public bool PullObject<T>(string _poolTag, out T component) where T : Component
         {
-            GetPool(_poolTag).ReturnObject(_gameObject);
+            component = GetPool(_poolTag).PullObject<T>();
+            return component != null;
         }
 
-        public void ReturnUsingGameObjectToPool(PoolDataScriptableObject _poolTag, GameObject _gameObject)
+        public T PullObject<T>(PoolDataScriptableObject _poolData) where T : Component
         {
-            GetPool(_poolTag).ReturnObject(_gameObject);
+            return GetPool(_poolData).PullObject<T>();
         }
 
-        public void ReturnAllObjectsToPool(string _poolTag)
+        public bool PullObject<T>(PoolDataScriptableObject _poolData, out T component) where T : Component
         {
-            GetPool(_poolTag).ReturnAlllObjects();
+            component = GetPool(_poolData).PullObject<T>();
+            return component != null;
         }
+
+        public List<GameObject> PullAllObjects(string _poolTag)
+        {
+            return GetPool(_poolTag).PullAllObjects();
+        }
+        
+        public List<GameObject> PullAllObjects(PoolDataScriptableObject _poolData)
+        {
+            return GetPool(_poolData).PullAllObjects();
+        }
+
+        public List<T> PullAllObjects<T>(string _poolTag) where T : Component
+        {
+            return GetPool(_poolTag).PullAllObjects<T>();
+        }
+
+        public List<T> PullAllObjects<T>(PoolDataScriptableObject _poolData) where T : Component
+        {
+            return GetPool(_poolData).PullAllObjects<T>();
+        }
+
+
+
+        public void PushObject(string _poolTag, GameObject _gameObject)
+        {
+            GetPool(_poolTag).PushObject(_gameObject);
+        }
+
+        public void PushObject(PoolDataScriptableObject _poolData, GameObject _gameObject)
+        {
+            GetPool(_poolData).PushObject(_gameObject);
+        }
+
+        public void PushAllObjects(string _poolTag)
+        {
+            GetPool(_poolTag).PushAllObjects();
+        }
+
+        public void PushAllObjects(PoolDataScriptableObject _poolData)
+        {
+            GetPool(_poolData).PushAllObjects();
+        }
+    }
+
+    public interface IPoolable : IPullable, IPushable
+    {
+    }
+
+    public interface IPullable
+    {
+        void OnPull();
+    }
+
+    public interface IPushable
+    {
+        void OnPush();
     }
 }
