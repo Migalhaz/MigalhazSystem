@@ -19,13 +19,16 @@ namespace MigalhaSystem.DialogueSystem
         public void StartDialogueEvent()
         {
             if (m_startDialogueEvent is null) return;
-            m_startDialogueEvent?.Invoke();
+            m_startDialogueEvent?.Invoke(this, null);
         }
 
         public void FinishDialogueEvent()
         {
             if (m_finishDialogueEvent is null) return;
-            m_finishDialogueEvent?.Invoke();
+            if (m_finishDialogueEvent == null) return;
+
+
+            m_finishDialogueEvent?.Invoke(this, null);
         }
     }
 }

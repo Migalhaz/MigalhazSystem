@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace MigalhaSystem.DialogueSystem
@@ -163,13 +162,18 @@ namespace MigalhaSystem.DialogueSystem
         void SetupButton(Choice currentChoice, UnityEngine.UI.Button button)
         {
             button.onClick.AddListener(FinishDialogue);
-            button.onClick.AddListener(currentChoice.m_CurrentChoiceEvent.Invoke);
+
+            UnityEngine.Events.UnityAction action = 
+                () => currentChoice.m_CurrentChoiceEvent.Invoke(currentChoice, null);
+
+            button.onClick.AddListener(action);
+
             button.onClick.AddListener(ClearButton);
 
             void ClearButton()
             {
                 button.onClick.RemoveListener(FinishDialogue);
-                button.onClick.RemoveListener(currentChoice.m_CurrentChoiceEvent.Invoke);
+                button.onClick.RemoveListener(action);
             }
         }
 

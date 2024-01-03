@@ -6,7 +6,7 @@ using MigalhaSystem.Extensions;
 
 public class PoolTest : MonoBehaviour, IPoolable
 {
-    [SerializeField] PoolDataScriptableObject m_poolData;
+    [SerializeField] PoolData m_poolData;
     [SerializeField] Timer m_timer;
     
     void Update()

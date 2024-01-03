@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class ManagerTest : MonoBehaviour
 {
-    [SerializeField] PoolDataScriptableObject poolDataScriptableObject;
+    [SerializeField] PoolData poolDataScriptableObject;
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))

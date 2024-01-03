@@ -39,7 +39,7 @@ namespace MigalhaSystem.DialogueSystem
         {
             if (m_lineEvent is null) return;
             
-            m_lineEvent.Invoke();
+            m_lineEvent.Invoke(this, null);
         }
     }
 

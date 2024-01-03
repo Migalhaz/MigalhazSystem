@@ -9,13 +9,13 @@ namespace MigalhaSystem.Pool
     public class Pool 
     {
         #region Variables
-        [SerializeField] PoolDataScriptableObject m_poolData;
+        [SerializeField] PoolData m_poolData;
 
         Transform m_poolParent;
         List<GameObject> m_freeObjects;
         List<GameObject> m_inUseObjects;
         #region Getters
-        public PoolDataScriptableObject m_PoolData => m_poolData;
+        public PoolData m_PoolData => m_poolData;
         public List<GameObject> m_FreeObjects => m_freeObjects;
         public List<GameObject> m_InUseObjects => m_inUseObjects;
         #endregion
@@ -28,7 +28,7 @@ namespace MigalhaSystem.Pool
             return m_poolData.CompareTag(_tag);
         }
 
-        public bool ComparePoolData(PoolDataScriptableObject _poolData)
+        public bool ComparePoolData(PoolData _poolData)
         {
             return m_poolData == _poolData;
         }
@@ -212,7 +212,7 @@ namespace MigalhaSystem.Pool
             return pools[0];
         }
 
-        public Pool GetPool(PoolDataScriptableObject _poolData)
+        public Pool GetPool(PoolData _poolData)
         {
             //return m_pools.Find(x => x.ComparePoolData(_poolTag));
             List<Pool> pools = m_pools.FindAll(x => x.ComparePoolData(_poolData));
@@ -225,7 +225,7 @@ namespace MigalhaSystem.Pool
             return GetPool(_poolTag).PullObject();
         }
 
-        public GameObject PullObject(PoolDataScriptableObject _poolData)
+        public GameObject PullObject(PoolData _poolData)
         {
             return GetPool(_poolData).PullObject();
         }
@@ -241,12 +241,12 @@ namespace MigalhaSystem.Pool
             return component != null;
         }
 
-        public T PullObject<T>(PoolDataScriptableObject _poolData) where T : Component
+        public T PullObject<T>(PoolData _poolData) where T : Component
         {
             return GetPool(_poolData).PullObject<T>();
         }
 
-        public bool PullObject<T>(PoolDataScriptableObject _poolData, out T component) where T : Component
+        public bool PullObject<T>(PoolData _poolData, out T component) where T : Component
         {
             component = GetPool(_poolData).PullObject<T>();
             return component != null;
@@ -257,7 +257,7 @@ namespace MigalhaSystem.Pool
             return GetPool(_poolTag).PullAllObjects();
         }
         
-        public List<GameObject> PullAllObjects(PoolDataScriptableObject _poolData)
+        public List<GameObject> PullAllObjects(PoolData _poolData)
         {
             return GetPool(_poolData).PullAllObjects();
         }
@@ -267,7 +267,7 @@ namespace MigalhaSystem.Pool
             return GetPool(_poolTag).PullAllObjects<T>();
         }
 
-        public List<T> PullAllObjects<T>(PoolDataScriptableObject _poolData) where T : Component
+        public List<T> PullAllObjects<T>(PoolData _poolData) where T : Component
         {
             return GetPool(_poolData).PullAllObjects<T>();
         }
@@ -279,7 +279,7 @@ namespace MigalhaSystem.Pool
             GetPool(_poolTag).PushObject(_gameObject);
         }
 
-        public void PushObject(PoolDataScriptableObject _poolData, GameObject _gameObject)
+        public void PushObject(PoolData _poolData, GameObject _gameObject)
         {
             GetPool(_poolData).PushObject(_gameObject);
         }
@@ -289,7 +289,7 @@ namespace MigalhaSystem.Pool
             GetPool(_poolTag).PushAllObjects();
         }
 
-        public void PushAllObjects(PoolDataScriptableObject _poolData)
+        public void PushAllObjects(PoolData _poolData)
         {
             GetPool(_poolData).PushAllObjects();
         }
