@@ -1,0 +1,10 @@
+using UnityEngine;
+using UnityEditor;
+
+	#ROOTNAMESPACEBEGIN#
+[CustomEditor(typeof(Type Here))]
+public class #SCRIPTNAME# : Editor
+{
+	
+}
+#ROOTNAMESPACEEND#

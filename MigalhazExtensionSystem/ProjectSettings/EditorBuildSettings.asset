@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/ObserverPatternTestScene.unity
-    guid: 3ca2b99424cdd584faa2fe5d69766f31
+    path: Assets/Scenes/PoolingTestScene.unity
+    guid: 7e12e8e2528a24b4ba518d2c55ce585b
   m_configObjects: {}
