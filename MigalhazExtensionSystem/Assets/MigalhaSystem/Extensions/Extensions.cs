@@ -8,14 +8,41 @@ namespace MigalhaSystem.Extensions
 {
     public static class VectorExtension
     {
-        public static Vector2 Where(this Vector2 _vector2, float? x = null, float? y = null)
+        static List<Vector2> m_vector2List;
+        static List<Vector3> m_vector3List;
+
+        public static Vector2 Provide(float x, float y)
+        {
+            m_vector2List ??= new();
+            if (m_vector2List.CheckAndGet(vector => vector.x == x && vector.y == y, out Vector2 result))
+            {
+                return result;
+            }
+            Vector2 expected = new Vector2(x, y);
+            m_vector2List.Add(expected);
+            return expected;
+        }
+
+        public static Vector3 Provide(float x, float y, float z)
+        {
+            m_vector3List ??= new();
+            if (m_vector3List.CheckAndGet(vector => vector.x == x && vector.y == y && vector.z == z, out Vector3 result))
+            {
+                return result;
+            }
+            Vector3 expected = new Vector3(x, y);
+            m_vector3List.Add(expected);
+            return expected;
+        }
+
+        public static Vector2 With(this Vector2 _vector2, float? x = null, float? y = null)
         {
             float newX = x is null ? _vector2.x : (float) x;
             float newY = y is null ? _vector2.y : (float) y;
             _vector2.Set(newX, newY);
             return _vector2;
         }
-        public static Vector3 Where(this Vector3 _vector3, float? x = null, float? y = null, float? z = null)
+        public static Vector3 With(this Vector3 _vector3, float? x = null, float? y = null, float? z = null)
         {
             float newX = x is null ? _vector3.x : (float)x;
             float newY = y is null ? _vector3.y : (float)y;
@@ -94,16 +121,6 @@ namespace MigalhaSystem.Extensions
 
     public enum DrawMethod { N, OnDrawGizmos, OnDrawGizmosSelected }
 
-    [System.Serializable]
-    public class DrawSettings
-    {
-        [SerializeField] bool m_draw = true;
-        [SerializeField] Color m_color = Color.white;
-        [SerializeField] DrawMethod m_drawMethod = DrawMethod.OnDrawGizmos;
-        public bool CanDraw(DrawMethod drawMethod) => m_draw && drawMethod == m_drawMethod;
-        public Color GetColor() => m_color;
-    }
-
     public static class FloatExtend
     {
         public static bool IsInteger(this float value) => value % 1 <= float.Epsilon * 1000;
@@ -162,8 +179,7 @@ namespace MigalhaSystem.Extensions
 
     public static class ListExtend
     {
-        public static T GetRandom<T>(this List<T> list) => list[list.Count.RangeBy0()];
-        public static T GetRandom<T>(this T[] array) => array[array.Length.RangeBy0()];
+        public static T GetRandom<T>(this IEnumerable<T> enumerable) => enumerable.ElementAt(enumerable.Count().RangeBy0());
 
         public static List<T> Shuffle<T>(this List<T> list)
         {
@@ -255,6 +271,18 @@ namespace MigalhaSystem.Extensions
             return list;
         }
 
+        public static bool CheckAndGet<T>(this List<T> list, System.Predicate<T> match, out T item)
+        {
+            if (!list.Exists(match))
+            {
+                item = default;
+                return false;
+            }
+
+            item = list.Find(match);
+            return true;
+        }
+
         public static int CountItens<T>(this List<T> list, System.Predicate<T> match) => list.FindAll(match).Count;
         public static bool IsNullOrEmpty<T>(this List<T> list) => list.IsNull() || list.IsEmpty();
         public static bool IsEmpty<T>(this List<T> list) => list.Count <= 0;
@@ -272,10 +300,16 @@ namespace MigalhaSystem.Extensions
         public static Color GetRandomColor() => Random.ColorHSV();
         public static Color SetAlpha(this Color color, float alpha)
         {
-            Color newColor = color;
-            alpha = Mathf.Clamp01(alpha);
-            newColor.a = alpha;
-            return newColor;
+            color.a = Mathf.Clamp01(alpha);
+            return color;
+        }
+        public static Color Set(this Color color, float? r = null, float? g = null, float? b = null, float? a = null)
+        {
+            color.r = Mathf.Clamp01(r ?? color.r);
+            color.g = Mathf.Clamp01(g ?? color.g);
+            color.b = Mathf.Clamp01(b ?? color.b);
+            color.a = Mathf.Clamp01(a ?? color.a);
+            return color;
         }
     }
 
@@ -291,145 +325,229 @@ namespace MigalhaSystem.Extensions
         {
             return !go.GetComponents<Component>().Any(c => Requires(c.GetType(), t));
         }
-        public static T CreateIfItsNull<T>(this T obj) where T : class, new()
+
+        public static T GetOrAdd<T>(this GameObject gameObject) where T : Component
         {
-            if (obj is null)
-            {
-                obj = new T();
-            }
-            return obj;
+            T component = gameObject.GetComponent<T>();
+            if (!component) component = gameObject.AddComponent<T>();
+            return component;
         }
+
+        public static T OrNull<T>(this T obj) where T : Object => obj ? obj : null;
+        public static List<GameObject> SortByDistance(this List<GameObject> components, Vector3 position) => components.OrderBy(x => Vector3.Distance(x.transform.position, position)).ToList();
+    }
+
+    public static class TransformExtensions
+    {
+        public static IEnumerable<Transform> Children(this Transform parent)
+        {
+            yield return parent;
+            //foreach (Transform child in parent)
+            //{
+            //    yield return child;
+            //}
+        }
+
+        public static void DestroyChildren(this Transform parent) => parent.PerfomActionOnChildren(child => Object.Destroy(child.gameObject));
+        public static void SetChildrenActive(this Transform parent, bool active) => parent.PerfomActionOnChildren(child => child.gameObject.SetActive(active));
+        public static void PerfomActionOnChildren(this Transform parent, System.Action<Transform> action)
+        {
+            for (int i = parent.childCount - 1; i >= 0; i--)
+            {
+                action?.Invoke(parent.GetChild(i));
+            }
+        }
+
+        public static Transform GetMainParent(this Transform transform)
+        {
+            Transform mainParent = transform;
+            while (mainParent.parent is not null)
+            {
+                mainParent = mainParent.parent;
+            }
+            return mainParent;
+        }
+        public static void ResetLocalTransformation(this Transform transform)
+        {
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
+        }
+        public static void ResetTransformation(this Transform transform)
+        {
+            transform.position = Vector3.zero;
+            transform.rotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
+        }
+    }
+
+    public static class ComponentExtension
+    {
+        public static List<T> SortByDistance<T>(this List<T> components, Vector3 position) where T : Component => components.OrderBy(x => Vector3.Distance(x.transform.position, position)).ToList();
     }
 
     [System.Serializable]
     public struct FloatRange
     {
-        [SerializeField] float m_minValue;
-        [SerializeField] float m_maxValue;
-        public float m_MinValue => m_minValue;
-        public float m_MaxValue => m_maxValue;
+        public float minValue;
+        public float maxValue;
+        public float this[int i]
+        {
+            get
+            {
+                switch (i)
+                {
+                    case 0: return minValue;
+                    case 1: return maxValue;
+                    default: throw new System.IndexOutOfRangeException();
+                }
+            }
+        }
+
+        public float deepness => maxValue - minValue;
+        public float value => Random.Range(minValue, maxValue);
 
         public FloatRange(Vector2 value)
         {
-            m_minValue = value.x;
-            m_maxValue = value.y;
+            minValue = value.x;
+            maxValue = value.y;
         }
         public FloatRange(Vector3 value)
         {
-            m_minValue = value.x;
-            m_maxValue = value.y;
+            minValue = value.x;
+            maxValue = value.y;
+        }
+        public FloatRange(IntRange range)
+        {
+            minValue = range.minValue;
+            maxValue = range.maxValue;
         }
         public FloatRange(float value)
         {
-            m_minValue = value;
-            m_maxValue = value;
+            minValue = value;
+            maxValue = value;
         }
         public FloatRange(float _minValue, float _maxValue)
         {
-            m_minValue = _minValue;
-            m_maxValue = _maxValue;
+            minValue = _minValue;
+            maxValue = _maxValue;
         }
 
-        public void SetMinValue(float newValue) => m_minValue = newValue;
-        public void SetMaxValue(float newValue) => m_maxValue = newValue;
-        public void SetRangeValue(float newMinValue, float newMaxValue)
+        public void Set(float? minValue = null, float? maxValue = null)
         {
-            m_minValue = newMinValue;
-            m_maxValue = newMaxValue;
+            this.minValue = minValue ?? this.minValue;
+            this.maxValue = maxValue ?? this.maxValue;
         }
 
-        public bool InRange(float value) => value >= m_minValue && value <= m_maxValue;
-        public bool InRange(int value) => value >= m_minValue && value <= m_maxValue;
+        public bool InRange(float value) => value >= minValue && value <= maxValue;
+        public bool InRange(int value) => value >= minValue && value <= maxValue;
 
-        public float GetRandomValue() => Random.Range(m_minValue, m_maxValue);
-        public float Clamp(float value) => Mathf.Clamp(value, m_minValue, m_maxValue);
-        public float Lerp(float t) => Mathf.Lerp(m_minValue, m_maxValue, t);
-        public float InverseLerp(float value) => Mathf.InverseLerp(m_minValue, m_maxValue, value);
-        public float LerpUnclamped(float t) => Mathf.LerpUnclamped(m_minValue, m_maxValue, t);
-        public float Deepness() => m_MaxValue - m_MinValue;
+        public float GetRandomValue() => value;
+        public float Clamp(float value) => Mathf.Clamp(value, minValue, maxValue);
+        public float Lerp(float t) => Mathf.Lerp(minValue, maxValue, t);
+        public float InverseLerp(float value) => Mathf.InverseLerp(minValue, maxValue, value);
+        public float LerpUnclamped(float t) => Mathf.LerpUnclamped(minValue, maxValue, t);
+        public float Deepness() => deepness;
 
-        public static FloatRange operator +(FloatRange a, FloatRange b) => new(a.m_minValue + b.m_minValue, a.m_maxValue + b.m_maxValue);
-        public static FloatRange operator +(FloatRange a, float value) => new(a.m_minValue + value, a.m_maxValue + value);
-        public static FloatRange operator -(FloatRange a, FloatRange b) => new(a.m_minValue - b.m_minValue, a.m_maxValue - b.m_maxValue);
-        public static FloatRange operator -(FloatRange a, float value) => new(a.m_minValue - value, a.m_maxValue - value);
-        public static FloatRange operator *(FloatRange a, float value) => new(a.m_minValue * value, a.m_maxValue * value);
-        public static FloatRange operator /(FloatRange a, float value) => new(a.m_minValue / value, a.m_maxValue / value);
+        public static FloatRange operator +(FloatRange a, FloatRange b) => new(a.minValue + b.minValue, a.maxValue + b.maxValue);
+        public static FloatRange operator +(FloatRange a, float value) => new(a.minValue + value, a.maxValue + value);
+        public static FloatRange operator -(FloatRange a, FloatRange b) => new(a.minValue - b.minValue, a.maxValue - b.maxValue);
+        public static FloatRange operator -(FloatRange a, float value) => new(a.minValue - value, a.maxValue - value);
+        public static FloatRange operator *(FloatRange a, float value) => new(a.minValue * value, a.maxValue * value);
+        public static FloatRange operator /(FloatRange a, float value) => new(a.minValue / value, a.maxValue / value);
 
         public static bool operator <(FloatRange a, FloatRange b) => a.Deepness() < b.Deepness();
         public static bool operator >(FloatRange a, FloatRange b) => a.Deepness() > b.Deepness();
         public static bool operator <=(FloatRange a, FloatRange b) => a.Deepness() <= b.Deepness();
         public static bool operator >=(FloatRange a, FloatRange b) => a.Deepness() >= b.Deepness();
 
-        public static implicit operator Vector2(FloatRange a) => new Vector2(a.m_minValue, a.m_maxValue);
-        public static implicit operator Vector3(FloatRange a) => new Vector3(a.m_minValue, a.m_maxValue);
+        public static implicit operator Vector2(FloatRange a) => new Vector2(a.minValue, a.maxValue);
+        public static implicit operator Vector3(FloatRange a) => new Vector3(a.minValue, a.maxValue);
 
-        public static implicit operator FloatRange(Vector2 vector) => new FloatRange(vector.x, vector.y);
-        public static implicit operator FloatRange(Vector3 vector) => new FloatRange(vector.x, vector.y);
+        public static implicit operator FloatRange(Vector2 vector) => new FloatRange(vector);
+        public static implicit operator FloatRange(Vector3 vector) => new FloatRange(vector);
+        public static implicit operator FloatRange(IntRange range) => new FloatRange(range);
     }
 
     [System.Serializable]
     public struct IntRange
     {
-        [SerializeField] int m_minValue;
-        [SerializeField] int m_maxValue;
-        public int m_MinValue => m_minValue;
-        public int m_MaxValue => m_maxValue;
+        public int minValue;
+        public int maxValue;
 
+        public int this[int i]
+        {
+            get
+            {
+                switch (i)
+                {
+                    case 0: return minValue;
+                    case 1: return maxValue;
+                    default: throw new System.IndexOutOfRangeException();
+                }
+            }
+        }
+
+        public int deepness => maxValue - minValue;
         public IntRange(Vector2 value)
         {
-            m_minValue = (int)value.x;
-            m_maxValue = (int)value.y;
+            minValue = (int)value.x;
+            maxValue = (int)value.y;
         }
         public IntRange(Vector3 value)
         {
-            m_minValue = (int)value.x;
-            m_maxValue = (int)value.y;
+            minValue = (int)value.x;
+            maxValue = (int)value.y;
+        }
+        public IntRange(FloatRange value)
+        {
+            minValue = (int)value.minValue;
+            maxValue = (int)value.maxValue;
         }
         public IntRange(int value)
         {
-            m_minValue = value;
-            m_maxValue = value;
+            minValue = value;
+            maxValue = value;
         }
         public IntRange(int _minValue, int _maxValue)
         {
-            m_minValue = _minValue;
-            m_maxValue = _maxValue;
+            minValue = _minValue;
+            maxValue = _maxValue;
         }
 
-        public void SetMinValue(int newValue) => m_minValue = newValue;
-        public void SetMaxValue(int newValue) => m_maxValue = newValue;
-        public void SetRangeValue(int newMinValue, int newMaxValue)
+        public void Set(int? newMinValue = null, int? newMaxValue = null)
         {
-            m_minValue = newMinValue;
-            m_maxValue = newMaxValue;
+            minValue = newMinValue ?? minValue;
+            maxValue = newMaxValue ?? maxValue;
         }
 
-        public bool InRange(float value) => value >= m_minValue && value <= m_maxValue;
-        public bool InRange(int value) => value >= m_minValue && value <= m_maxValue;
+        public bool InRange(float value) => value >= minValue && value <= maxValue;
+        public bool InRange(int value) => value >= minValue && value <= maxValue;
 
-        public int GetRandomValue(bool _maxInclusive = false) => Random.Range(m_minValue, m_maxValue + (_maxInclusive ? 1 : 0));
-        public int Clamp(int value) => Mathf.Clamp(value, m_minValue, m_maxValue);
-        public float Lerp(float t) => Mathf.Lerp(m_minValue, m_maxValue, t);
-        public float InverseLerp(float value) => Mathf.InverseLerp(m_minValue, m_maxValue, value);
-        public float LerpUnclamped(float t) => Mathf.LerpUnclamped(m_minValue, m_maxValue, t);
-        public int Deepness() => m_maxValue - m_minValue;
+        public int GetRandomValue(bool _maxInclusive = false) => Random.Range(minValue, maxValue + (_maxInclusive ? 1 : 0));
+        public int Clamp(int value) => Mathf.Clamp(value, minValue, maxValue);
+        public float Lerp(float t) => Mathf.Lerp(minValue, maxValue, t);
+        public float InverseLerp(float value) => Mathf.InverseLerp(minValue, maxValue, value);
+        public float LerpUnclamped(float t) => Mathf.LerpUnclamped(minValue, maxValue, t);
+        public int Deepness() => maxValue - minValue;
 
-        public static IntRange operator +(IntRange a, IntRange b) => new(a.m_minValue + b.m_minValue, a.m_maxValue + b.m_maxValue);
-        public static IntRange operator +(IntRange a, int value) => new(a.m_minValue + value, a.m_maxValue + value);
-        public static IntRange operator -(IntRange a, IntRange b) => new(a.m_minValue - b.m_minValue, a.m_maxValue - b.m_maxValue);
-        public static IntRange operator -(IntRange a, int value) => new(a.m_minValue - value, a.m_maxValue - value);
-        public static IntRange operator *(IntRange a, int value) => new(a.m_minValue * value, a.m_maxValue * value);
-        public static IntRange operator /(IntRange a, int value) => new(a.m_minValue / value, a.m_maxValue / value);
+        public static IntRange operator +(IntRange a, IntRange b) => new(a.minValue + b.minValue, a.maxValue + b.maxValue);
+        public static IntRange operator +(IntRange a, int value) => new(a.minValue + value, a.maxValue + value);
+        public static IntRange operator -(IntRange a, IntRange b) => new(a.minValue - b.minValue, a.maxValue - b.maxValue);
+        public static IntRange operator -(IntRange a, int value) => new(a.minValue - value, a.maxValue - value);
+        public static IntRange operator *(IntRange a, int value) => new(a.minValue * value, a.maxValue * value);
+        public static IntRange operator /(IntRange a, int value) => new(a.minValue / value, a.maxValue / value);
         public static bool operator <(IntRange a, IntRange b) => a.Deepness() < b.Deepness();
         public static bool operator >(IntRange a, IntRange b) => a.Deepness() > b.Deepness();
         public static bool operator <=(IntRange a, IntRange b) => a.Deepness() <= b.Deepness();
         public static bool operator >=(IntRange a, IntRange b) => a.Deepness() >= b.Deepness();
 
-        public static implicit operator Vector2(IntRange a) => new Vector2(a.m_minValue, a.m_maxValue);
-        public static implicit operator Vector3(IntRange a) => new Vector3(a.m_minValue, a.m_maxValue);
+        public static implicit operator Vector2(IntRange a) => new Vector2(a.minValue, a.maxValue);
+        public static implicit operator Vector3(IntRange a) => new Vector3(a.minValue, a.maxValue);
 
-        public static implicit operator IntRange(Vector2 vector) => new IntRange((int)vector.x, (int)vector.y);
-        public static implicit operator IntRange(Vector3 vector) => new IntRange((int)vector.x, (int)vector.y);
+        public static implicit operator IntRange(Vector2 vector) => new IntRange(vector);
+        public static implicit operator IntRange(Vector3 vector) => new IntRange(vector);
+        public static implicit operator IntRange(FloatRange floatRange) => new IntRange(floatRange);
     }
 
     [System.Serializable]
@@ -444,8 +562,8 @@ namespace MigalhaSystem.Extensions
 
         [Header("Event Settings")]
         [SerializeField] protected List<TimerEvent> m_timerEvents;
-        [SerializeField] protected UnityEvent m_onTimerElapsed;
         [SerializeField] protected UnityEvent m_onTimerStart;
+        [SerializeField] protected UnityEvent m_onTimerElapsed;
 
         public bool m_Active => m_countdown;
         public List<TimerEvent> m_TimerEvents => m_timerEvents;
@@ -453,59 +571,64 @@ namespace MigalhaSystem.Extensions
         public float m_PickedTimerValue => m_pickedTimerValue;
         public float m_CurrentTimerValue => m_currentTimerValue;
         public FloatRange m_StartTimer => m_startTimer;
+
+        public Timer(FloatRange startTimer)
+        {
+            m_startTimer = startTimer;
+            m_timerEvents = new();
+            m_onTimerStart = new();
+            m_onTimerElapsed = new();
+        }
+        public Timer(float startTimer)
+        {
+            m_startTimer = new(startTimer);
+            m_timerEvents = new();
+            m_onTimerStart = new();
+            m_onTimerElapsed = new();
+        }
+        public Timer(float startTimerMinValue, float startTimerMaxValue)
+        {
+            m_startTimer = new(startTimerMinValue, startTimerMaxValue);
+            m_timerEvents = new();
+            m_onTimerStart = new();
+            m_onTimerElapsed = new();
+        }
+
         public void SetStartTimer(FloatRange newStartTimer)
         {
             m_startTimer = newStartTimer;
         }
-        public void SetStartTimer(float newMinValue, float newMaxValue)
+        public void SetStartTimer(float? newMinValue = null, float? newMaxValue = null)
         {
-            m_startTimer.SetRangeValue(newMinValue, newMaxValue);
-        }
-        public void ChangeMinStartTimerValue(float newMinValue)
-        {
-            m_startTimer.SetMinValue(newMinValue);
-        }
-        public void ChangeMaxStartTimerValue(float newMaxValue)
-        {
-            m_startTimer.SetMaxValue(newMaxValue);
-        }
-        public void DecreaseStartTimerValue(float decreaseValue)
-        {
-            m_startTimer.SetMinValue(m_startTimer.m_MinValue - decreaseValue);
-            m_startTimer.SetMaxValue(m_startTimer.m_MaxValue - decreaseValue);
-        }
-        public void DecreaseStartTimerValue(float decreaseMinValue, float decreaseMaxValue)
-        {
-            m_startTimer.SetMinValue(m_startTimer.m_MinValue - decreaseMinValue);
-            m_startTimer.SetMaxValue(m_startTimer.m_MaxValue - decreaseMaxValue);
-        }
-        public void IncreaseStartTimerValue(float decreaseValue)
-        {
-            m_startTimer.SetMinValue(m_startTimer.m_MinValue + decreaseValue);
-            m_startTimer.SetMaxValue(m_startTimer.m_MaxValue + decreaseValue);
-        }
-        public void IncreaseStartTimerValue(float decreaseMinValue, float decreaseMaxValue)
-        {
-            m_startTimer.SetMinValue(m_startTimer.m_MinValue + decreaseMinValue);
-            m_startTimer.SetMaxValue(m_startTimer.m_MaxValue + decreaseMaxValue);
+            m_startTimer.Set(newMinValue, newMaxValue);
         }
 
-        public float GetTimeElapsedPercentage() => Mathf.Lerp(m_pickedTimerValue, 0, m_currentTimerValue);
-        public void ActiveTimer(bool active)
+        public float GetTimeElapsedPercentage() => Mathf.Abs(1 - (m_currentTimerValue/m_pickedTimerValue));
+
+        public void StartTimer()
         {
-            m_countdown = active;
-            if (active)
-            {
-                m_onTimerStart?.Invoke();
-                SetupTimer();
-            }
+            SetupTimer();
+            m_countdown = true;
+            m_onTimerStart?.Invoke();
         }
+        public void PauseTimer()
+        {
+            m_countdown = false;
+        }
+        public void ReleaseTimer()
+        {
+            m_countdown = true;
+        }
+        public void BreakTimer()
+        {
+            m_currentTimerValue = 0;
+        }
+
         public virtual void SetupTimer()
         {
             m_pickedTimerValue = m_startTimer.GetRandomValue();
             m_currentTimerValue = m_pickedTimerValue;
-            //m_currentTimerValue = m_startTimer.GetRandomValue();
-            if (m_timerEvents == null) m_timerEvents = new();
+            m_timerEvents ??= new();
             foreach (TimerEvent timerEvent in m_timerEvents)
             {
                 timerEvent.Setup();
@@ -539,8 +662,11 @@ namespace MigalhaSystem.Extensions
         }
         protected virtual void TimerElapsedAction()
         {
-            ActiveTimer(m_repeater);
             m_onTimerElapsed?.Invoke();
+            if (m_repeater)
+            {
+                StartTimer();
+            }
         }
 
         public void AddTimeElapsedEvent(UnityAction action)
@@ -585,31 +711,6 @@ namespace MigalhaSystem.Extensions
             if (m_timerEvents.IsNullOrEmpty()) return;
             m_timerEvents.Clear();
         }
-
-#if UNITY_EDITOR
-        public void OnValidate()
-        {
-            float minValue = m_StartTimer.m_MinValue;
-            float maxValue = m_StartTimer.m_MaxValue;
-
-            if (minValue <= 0)
-            {
-                minValue = 0;
-            }
-
-            if (maxValue < minValue)
-            {
-                maxValue = minValue;
-            }
-
-            if (minValue > maxValue)
-            {
-                minValue = maxValue;
-            }
-
-            m_startTimer.SetRangeValue(minValue, maxValue);
-        }
-#endif
     }
 
     [System.Serializable]
@@ -662,314 +763,23 @@ namespace MigalhaSystem.Extensions
         public static bool PickChance(float chance) => Random.value < (chance * 0.01f);
     }
 
-    [System.Serializable]
-    public class DamageSystem
+    public interface IBuilder<T>
     {
-        [SerializeField] FloatRange m_damageValue;
-        [SerializeField, Min(0)] float m_criticalHitMultiplyer = 2f;
-        [SerializeField] ChancePicker m_criticalHitChance;
-        public virtual float GetDamageValue()
-        {
-            float damage = m_damageValue.GetRandomValue();
-            if (IsCritical())
-            {
-                damage *= m_criticalHitMultiplyer;
-            }
-            return damage;
-        }
-        public virtual bool IsCritical() => m_criticalHitChance.PickChance();
-    }
-
-    [System.Serializable]
-    public class DamageSystemInt
-    {
-        [SerializeField] IntRange m_damageValue;
-        [SerializeField] bool m_maxInclusive = true;
-        [SerializeField, Min(0)] int m_criticalHitMultiplyer = 2;
-        [SerializeField] ChancePicker m_criticalHitChance;
-        public virtual int GetDamageValue()
-        {
-            int damage = m_damageValue.GetRandomValue(m_maxInclusive);
-            if (IsCritical())
-            {
-                damage *= m_criticalHitMultiplyer;
-            }
-            return damage;
-        }
-        public virtual bool IsCritical() => m_criticalHitChance.PickChance();
-    }
-
-    [System.Serializable]
-    public class ComponentContainer
-    {
-        [SerializeField] List<Component> m_components;
-        public List<Component> m_Components => m_components;
-
-        public void AddComponentInContainer(params Component[] component)
-        {
-            m_components.RemoveAll(x => x == null);
-            if (component == null) return;
-            if (component.Length <= 0) return;
-            m_components.AddRangeOnce(component);
-        }
-
-
-        public T GetComponentFromContainer<T>() where T : Component
-        {
-            m_components ??= new();
-            m_components.RemoveAll(x => x == null);
-            return m_components.FindType<Component, T>();
-        }
-        public T GetComponentFromContainer<T>(System.Action notFoundComponentAction, bool TryGetComponentAgain = false) where T : Component
-        {
-            T component = GetComponentFromContainer<T>();
-            if (component == null) notFoundComponentAction?.Invoke();
-            if (TryGetComponentAgain) component = GetComponentFromContainer<T>();
-            return component;
-        }
-        public bool TryGetComponentFromContainer<T>(out T component) where T : Component
-        {
-            component = GetComponentFromContainer<T>();
-            return component != null;
-        }
-
-        public List<T> GetComponentsFromContainer<T>() where T : Component
-        {
-            m_components ??= new();
-            m_components.RemoveAll(x => x == null);
-            return m_components.FindAllType<Component, T>();
-        }
-    }
-
-    [System.Serializable]
-    public sealed class SerializableDictionary<TKey, TValue>
-    {
-        [SerializeField] List<KeyValue<TKey, TValue>> m_dictionary;
-        public int Count => m_dictionary.Count;
-        public List<KeyValue<TKey, TValue>> GetList() => m_dictionary;
-        public Dictionary<TKey, TValue> ToDictionary()
-        {
-            return m_dictionary.ToDictionary(itemInList => itemInList.GetKey(), itemInList => itemInList.GetValue());
-        }
-        public List<TKey> GetAllKeys()
-        {
-            List<TKey> keys = new List<TKey>();
-            foreach (var item in m_dictionary)
-            {
-                keys.Add(item.GetKey());
-            }
-            return keys;
-        }
-        public List<TValue> GetAllValues()
-        {
-            List<TValue> value = new List<TValue>();
-            foreach (var item in m_dictionary)
-            {
-                value.Add(item.GetValue());
-            }
-            return value;
-        }
-        public void RemoveNullItems()
-        {
-            m_dictionary.RemoveAll(x => x == null);
-            m_dictionary.RemoveAll(x => x.GetValue() == null && x.GetKey() == null);
-        }
-        public void RemoveNullKeys()
-        {
-            List<TKey> nullKeys = GetAllKeys().FindAll(x => x is null);
-            foreach (TKey key in nullKeys)
-            {
-                Remove(key);
-            }
-        }
-        public void RemoveNullValues()
-        {
-            List<TValue> nullValues = GetAllValues().FindAll(x => x is null);
-            foreach (TValue value in nullValues)
-            {
-                Remove(value);
-            }
-        }
-        public void Add(TKey key, TValue value)
-        {
-            m_dictionary.Add(new KeyValue<TKey, TValue>(key, value));
-        }
-        public void Clear()
-        {
-            m_dictionary.Clear();
-        }
-        public KeyValue<TKey, TValue> GetItem(TKey key)
-        {
-            EqualityComparer<TKey> comparer = EqualityComparer<TKey>.Default;
-            KeyValue<TKey, TValue> item = m_dictionary.Find(x => comparer.Equals(key, x.GetKey()));
-            return item;
-        }
-        public KeyValue<TKey, TValue> GetItem(TValue value)
-        {
-            EqualityComparer<TValue> comparer = EqualityComparer<TValue>.Default;
-            KeyValue<TKey, TValue> item = m_dictionary.Find(x => comparer.Equals(value, x.GetValue()));
-            return item;
-        }
-        public bool GetItem(TKey key, out KeyValue<TKey, TValue> item)
-        {
-            item = null;
-            if (!ContainsKey(key)) return false;
-            item = GetItem(key);
-            return true;
-        }
-        public bool GetItem(TValue value, out KeyValue<TKey, TValue> item)
-        {
-            item = null;
-            if (!ContainsValue(value))
-            {
-                return false;
-            }
-            item = GetItem(value);
-            return true;
-        }
-        public bool ContainsKey(TKey key) => GetItem(key) != null;
-        public bool ContainsValue(TValue value) => GetItem(value) != null;
-        public bool ContainsItem(KeyValue<TKey, TValue> item) => m_dictionary.Contains(item);
-        public bool Remove(TKey key)
-        {
-            if (!GetItem(key, out KeyValue<TKey, TValue> item)) return false;
-            m_dictionary.Remove(item);
-            return true;
-        }
-        public bool Remove(TKey key, out TValue value)
-        {
-            value = default;
-            if (!GetItem(key, out KeyValue<TKey, TValue> item)) return false;
-            value = item.GetValue();
-            m_dictionary.Remove(item);
-            return true;
-        }
-        public bool Remove(TValue value)
-        {
-            if (!GetItem(value, out KeyValue<TKey, TValue> item)) return false;
-            m_dictionary.Remove(item);
-            return true;
-        }
-        public bool Remove(TValue value, out TKey key)
-        {
-            key = default;
-            if (!GetItem(value, out KeyValue<TKey, TValue> item)) return false;
-            key = item.GetKey();
-            m_dictionary.Remove(item);
-            return true;
-        }
-        public bool TryAdd(TKey key, TValue value)
-        {
-            if (ContainsKey(key)) return false;
-            Add(key, value);
-            return true;
-        }
-        public TValue GetValue(TKey key)
-        {
-            TValue value = default;
-            if (GetItem(key, out KeyValue<TKey, TValue> item))
-            {
-                value = item.GetValue();
-            }
-            return value;
-        }
-        public bool TryGetValue(TKey key, out TValue value)
-        {
-            value = default;
-            if (!ContainsKey(key)) return false;
-            value = GetValue(key);
-            return true;
-        }
-        public TKey GetKey(TValue value)
-        {
-            TKey key = default;
-            if (GetItem(value, out KeyValue<TKey, TValue> item))
-            {
-                key = item.GetKey();
-            }
-            return key;
-        }
-        public bool TryGetKey(TValue value, out TKey key)
-        {
-            key = default;
-            if (!ContainsValue(value)) return false;
-            key = GetKey(value);
-            return true;
-        }
-    }
-
-    [System.Serializable]
-    public sealed class KeyValue<TKey, TValue>
-    {
-        [SerializeField] TKey m_key;
-        [SerializeField] TValue m_value;
-
-        public KeyValue(TKey key, TValue value)
-        {
-            m_key = key;
-            m_value = value;
-        }
-
-        public TKey GetKey() => m_key;
-        public TValue GetValue() => m_value;
-    }
-
-    public static class Benchmark
-    {
-        public static void TimeExecution(System.Action function, string label = null, bool ms = true)
-        {
-            System.Diagnostics.Stopwatch timer = System.Diagnostics.Stopwatch.StartNew();
-            try
-            {
-                function?.Invoke();
-            }
-            finally
-            {
-                timer.Stop();
-                string timeMessage = ms ? $"{timer.ElapsedMilliseconds}ms" : $"{timer.Elapsed}";
-                timeMessage = timeMessage.Color(Color.green);
-
-                string result = $"{"Took:".Color(Color.white)} {timeMessage}".Bold();
-                if (label != null) result = $"{$"({label})".Bold().Color(Color.white)} {result}";
-                Debug.Log(result);
-            }
-        }
+        T Build();
     }
 
     public static class MigalhazHelper
     {
         static Camera m_mainCamera;
-        public static Camera m_MainCamera
-        {
-            get
-            {
-                if (m_mainCamera is null) m_mainCamera = Camera.main;
-                return m_mainCamera;
-            }
-        }
+        public static Camera m_MainCamera => m_mainCamera ??= Camera.main;
+
         static Camera m_currentCamera;
-        public static Camera m_CurrentCamera
-        {
-            get
-            {
-                if (m_currentCamera is null) m_currentCamera = Camera.current;
-                return m_currentCamera;
-            }
-        }
+        public static Camera m_CurrentCamera => m_currentCamera ??= Camera.current;
 
         static Dictionary<float, WaitForSeconds> m_waitForSecondsDictionary = new Dictionary<float, WaitForSeconds>();
 
         static PointerEventData m_eventDataCurrentPos;
         static List<RaycastResult> m_results;
-        static EventSystem m_currentEventSystem;
-        public static EventSystem m_CurrentEventSystem
-        {
-            get
-            {
-                if (m_currentEventSystem is null) m_currentEventSystem = EventSystem.current;
-                return m_currentEventSystem;
-            }
-        }
         
         public static Camera GetMainCamera() => m_MainCamera;
         public static Camera GetCurrentCamera() => m_CurrentCamera;
@@ -983,12 +793,12 @@ namespace MigalhaSystem.Extensions
         
         public static bool IsOverUI(Vector3 _position)
         {
-            m_eventDataCurrentPos = new PointerEventData(m_CurrentEventSystem)
+            m_eventDataCurrentPos = new PointerEventData(EventSystem.current)
             {
                 position = _position
             };
             m_results = new List<RaycastResult>();
-            m_CurrentEventSystem.RaycastAll(m_eventDataCurrentPos, m_results);
+            EventSystem.current.RaycastAll(m_eventDataCurrentPos, m_results);
             return m_results.Count > 0;
         }
 
@@ -1000,42 +810,52 @@ namespace MigalhaSystem.Extensions
         public static Vector2 GetCanvasPositionOfWorldElement(GameObject element) => RectTransformUtility.WorldToScreenPoint(m_MainCamera, element.transform.position);
         public static Vector2 GetCanvasPositionOfWorldPosition(Vector3 element) => RectTransformUtility.WorldToScreenPoint(m_MainCamera, element);
 
-        public static void DeleteChildren(this Transform transform)
+        public static void BooleanLog(bool check, string trueCheckMessage, string falseCheckMessage, Object context = null)
         {
-            foreach (Transform child in transform)
-            {
-                Object.Destroy(child.gameObject);
-            }
-        }
-        public static Transform GetMainParent(this Transform transform)
-        {
-            Transform mainParent = transform;
-            while (mainParent.parent is not null)
-            {
-                mainParent = mainParent.parent;
-            }
-            return mainParent;
-        }
-        public static void ResetLocalTransformation(this Transform transform)
-        {
-            transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.identity;
-            transform.localScale = Vector3.one;
-        }
-        public static void ResetTransformation(this Transform transform)
-        {
-            transform.position = Vector3.zero;
-            transform.rotation = Quaternion.identity;
-            transform.localScale = Vector3.one;
-        }
-        public static void BooleanMessage(bool check, string trueCheckMessage, string falseCheckMessage, Object context = null)
-        {
+#if DEBUG
             trueCheckMessage ??= "";
             falseCheckMessage ??= "";
-            string msg = check  ? trueCheckMessage : falseCheckMessage;
+            string msg = check ? trueCheckMessage : falseCheckMessage;
             if (string.IsNullOrEmpty(msg)) return;
             if (context == null) Debug.Log(msg);
             else Debug.Log(msg, context);
+#endif
+        }
+        public static void Log(string message)
+        {
+#if DEBUG
+            Debug.Log(message);
+#endif
+        }
+        public static void Log(string message, Object context)
+        {
+#if DEBUG
+            Debug.Log(message, context);
+#endif
+        }
+        public static void LogWarning(string message)
+        {
+#if DEBUG
+            Debug.LogWarning(message);
+#endif
+        }
+        public static void LogWarning(string message, Object context)
+        {
+#if DEBUG
+            Debug.LogWarning(message, context);
+#endif
+        }
+        public static void LogError(string message)
+        {
+#if DEBUG
+            Debug.LogError(message);
+#endif
+        }
+        public static void LogError(string message, Object context)
+        {
+#if DEBUG
+            Debug.LogError(message, context);
+#endif
         }
     }
 }

@@ -10,25 +10,29 @@ namespace MigalhaSystem.SaveSystem
 {
     public class JsonDataService : IDataService
     {
-        const string m_KEY = "wPqdMcHljKsL7ZWV097Eb4YQSMizoEVC1w2jciXUJdY=";
-        const string m_IV = "oGbTa0CBP+2TZvUdk7aAvQ==";
+        const string k_KEY = "wPqdMcHljKsL7ZWV097Eb4YQSMizoEVC1w2jciXUJdY=";
+        const string k_IV = "oGbTa0CBP+2TZvUdk7aAvQ==";
 
         public bool SaveData<T>(string _relativePath, T _data, bool _encrypted)
         {
             string relativePath = NormalizeRelativePath(_relativePath);
 
-            string path = Application.persistentDataPath + relativePath;
+            string path = SaveUtils.GetPersistentDataPath() + relativePath;
 
             try
             {
                 if (File.Exists(path))
                 {
+#if DEBUG
                     Debug.LogWarning("Data exists. Deleting old file and writing a new one.");
+#endif
                     File.Delete(path);
                 }
                 else
                 {
+#if DEBUG
                     Debug.Log("Writing new file!");
+#endif
                 }
                 using FileStream stream = File.Create(path);
 
@@ -42,12 +46,13 @@ namespace MigalhaSystem.SaveSystem
                     File.WriteAllText(path, JsonConvert.SerializeObject(_data));
                 }
                        
-                
                 return true;
             }
             catch(Exception e)
             {
+#if DEBUG
                 Debug.LogError($"Unable to save data due to: {e.Message} {e.StackTrace}");
+#endif
                 return false;
             }
         }
@@ -55,11 +60,17 @@ namespace MigalhaSystem.SaveSystem
         void WriteEncryptedData<T>(T _data, FileStream _stream)
         {
             using Aes aesProvider = Aes.Create();
-            aesProvider.Key = Convert.FromBase64String(m_KEY);
-            aesProvider.IV = Convert.FromBase64String(m_IV);
+            aesProvider.Key = Convert.FromBase64String(k_KEY);
+            aesProvider.IV = Convert.FromBase64String(k_IV);
 
-            Debug.Log("KEY:" + $"{Convert.ToBase64String(aesProvider.Key)}".Bold().Color(Color.green));
-            Debug.Log("IV:" + $"{Convert.ToBase64String(aesProvider.IV)}".Bold().Color(Color.red));
+#if DEBUG
+            bool debugKeyAndIV = false;
+            if (debugKeyAndIV)
+            {
+                Debug.Log("KEY:" + $"{Convert.ToBase64String(aesProvider.Key)}".Bold().Color(Color.green));
+                Debug.Log("IV:" + $"{Convert.ToBase64String(aesProvider.IV)}".Bold().Color(Color.red));
+            }
+#endif
 
             using ICryptoTransform cryptoTransform = aesProvider.CreateEncryptor();
             using CryptoStream cryptoStream = new(_stream, cryptoTransform, CryptoStreamMode.Write);
@@ -71,12 +82,13 @@ namespace MigalhaSystem.SaveSystem
         {
             string relativePath = NormalizeRelativePath(_relativePath);
 
-            string path = Application.persistentDataPath + relativePath;
-
+            string path = SaveUtils.GetPersistentDataPath() + relativePath;
 
             if (!File.Exists(path))
             {
+#if DEBUG
                 Debug.LogError($"Cannot load file at {path}! File does not exist!".Error());
+#endif
                 throw new FileNotFoundException($"{path} does not exist!");
             }
 
@@ -86,7 +98,7 @@ namespace MigalhaSystem.SaveSystem
 
                 if (_encrypted)
                 {
-                    data =  ReadEncryptedData<T>(path);
+                    data = ReadEncryptedData<T>(path);
                 }
                 else
                 {
@@ -97,7 +109,9 @@ namespace MigalhaSystem.SaveSystem
             }
             catch (Exception e)
             {
+#if DEBUG
                 Debug.LogError($"Failed to load data due to: {e.Message} {e.StackTrace}");
+#endif
                 throw e;
             }
         }
@@ -106,8 +120,8 @@ namespace MigalhaSystem.SaveSystem
         {
             byte[] fileBytes = File.ReadAllBytes(_path);
             using Aes aesProvider = Aes.Create();
-            aesProvider.Key = Convert.FromBase64String(m_KEY);
-            aesProvider.IV = Convert.FromBase64String(m_IV);
+            aesProvider.Key = Convert.FromBase64String(k_KEY);
+            aesProvider.IV = Convert.FromBase64String(k_IV);
 
             using ICryptoTransform cryptoTransform = aesProvider.CreateDecryptor(aesProvider.Key, aesProvider.IV);
             using MemoryStream decryptorStream = new(fileBytes);
@@ -116,8 +130,9 @@ namespace MigalhaSystem.SaveSystem
             using StreamReader reader = new StreamReader(cryptoStream);
 
             string result = reader.ReadToEnd();
-
+#if DEBUG
             Debug.Log("Decrypt result  (if the following is not legible, probably wrong KEY or IV)! \n" + result.Color(Color.red).Bold());
+#endif
             return JsonConvert.DeserializeObject<T>(result);
         }
 
@@ -138,7 +153,5 @@ namespace MigalhaSystem.SaveSystem
 
             return normalizePath;
         }
-
-        
     }
 }

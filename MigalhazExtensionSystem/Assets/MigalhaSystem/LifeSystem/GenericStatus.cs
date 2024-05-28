@@ -14,15 +14,10 @@ namespace MigalhaSystem.LifeSystem
             m_CurrentHp = m_lifeData.m_StartHp;
         }
 
-        public virtual bool IsAlive()
-        {
-            return m_CurrentHp > 0;
-        }
-
-        public virtual float GetHpPercentage()
-        {
-            return m_CurrentHp / m_lifeData.m_MaxHp;
-        }
+        public virtual bool IsAlive() => m_CurrentHp > 0;
+        public virtual float GetHpPercentage() => GetCurrentHealth() / GetMaxHealth();
+        public virtual float GetMaxHealth() => m_lifeData.m_MaxHp;
+        public virtual float GetCurrentHealth() => m_CurrentHp;
     }
 
 

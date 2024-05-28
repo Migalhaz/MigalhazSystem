@@ -61,16 +61,6 @@ namespace MigalhaSystem.MigalhaEditor
             EditorWindow.focusedWindow.Close();
         }
 
-        [MenuItem(m_LAYOUTTOOLMENUFOLDER + "Reload Scene _F5")]
-        public static void ReloadScene()
-        {
-            if (EditorApplication.isPlaying)
-            {
-                string sceneName = SceneManager.GetActiveScene().name;
-                SceneManager.LoadScene(sceneName);
-            }
-        }
-
         [MenuItem(m_LAYOUTTOOLMENUFOLDER + "Maximize Current Tab _F11")]
         public static void MaximizeCurrentTab()
         {
@@ -79,7 +69,7 @@ namespace MigalhaSystem.MigalhaEditor
     }
     public static class ActionTool
     {
-        const string m_ACTIONTOOLMENUFOLDER = MigalhaEditor.m_MENUFOLDER + "Actions/";
+        public const string m_ACTIONTOOLMENUFOLDER = MigalhaEditor.m_MENUFOLDER + "Actions/";
 
         [MenuItem(m_ACTIONTOOLMENUFOLDER + "Notify")]
         public static void Notify()
@@ -197,7 +187,7 @@ namespace MigalhaSystem.MigalhaEditor
 
     public class MissingScriptTool
     {
-        const string m_MISSINGSCRIPTTOOLMENUFOLDER = MigalhaEditor.m_MENUFOLDER + "Missing Scripts/";
+        const string m_MISSINGSCRIPTTOOLMENUFOLDER = ActionTool.m_ACTIONTOOLMENUFOLDER + "Missing Scripts/";
 
         [MenuItem(m_MISSINGSCRIPTTOOLMENUFOLDER + "Find")]
         public static void FindMissingScripts()
@@ -225,6 +215,51 @@ namespace MigalhaSystem.MigalhaEditor
                     break;
                 }
             }
+        }
+    }
+    public class SceneTool
+    {
+        const string m_SCENETOOLMENUFOLDER = MigalhaEditor.m_MENUFOLDER + "Scene Tool/";
+
+        [MenuItem(m_SCENETOOLMENUFOLDER + "Reload Scene _F5")]
+        public static void ReloadScene()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                string sceneName = SceneManager.GetActiveScene().name;
+                SceneManager.LoadScene(sceneName);
+            }
+        }
+
+        [MenuItem(m_SCENETOOLMENUFOLDER + "Add Current Scene To Build Settings _F7")]
+        public static void AddSceneToBuildSettings()
+        {
+            string currentScenePath = SceneManager.GetActiveScene().path;
+            List<EditorBuildSettingsScene> buildSettingsScenes = EditorBuildSettings.scenes.ToList();
+
+            if (buildSettingsScenes.Exists(x => x.path == currentScenePath)) return;
+
+            EditorBuildSettingsScene newScene = new()
+            {
+                enabled = true,
+                path = currentScenePath
+            };
+            buildSettingsScenes.Add(newScene);
+            EditorBuildSettings.scenes = buildSettingsScenes.ToArray();
+        }
+
+        [MenuItem(m_SCENETOOLMENUFOLDER + "Remove Current Scene From Build Settings _%F7")]
+        public static void RemoveSceneToBuildSettings()
+        {
+            string currentScenePath = SceneManager.GetActiveScene().path;
+            List<EditorBuildSettingsScene> buildSettingsScenes = EditorBuildSettings.scenes.ToList();
+
+            if (!buildSettingsScenes.Exists(x => x.path == currentScenePath)) return;
+
+            EditorBuildSettingsScene sceneToRemove = buildSettingsScenes.Find(x => x.path == currentScenePath);
+
+            buildSettingsScenes.Remove(sceneToRemove);
+            EditorBuildSettings.scenes = buildSettingsScenes.ToArray();
         }
     }
 
@@ -293,7 +328,7 @@ namespace MigalhaSystem.MigalhaEditor
             if (Selection.activeGameObject)
             {
                 newGameObject.transform.SetParent(Selection.activeGameObject.transform);
-                MigalhazHelper.ResetLocalTransformation(newGameObject.transform);
+                newGameObject.transform.ResetLocalTransformation();
             }
 
             Selection.activeGameObject = newGameObject;

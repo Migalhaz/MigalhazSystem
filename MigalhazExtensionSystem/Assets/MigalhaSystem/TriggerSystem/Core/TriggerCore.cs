@@ -40,7 +40,7 @@ namespace Trigger
         /// <param name="position">Trigger's center. (This parameter will be ignored if trigger has a Center Object defined)</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns>Returns true if there's anything in trigger. Returns false otherwise.</returns>
-        public abstract bool InTrigger(Vector3 position, bool callbacks = true);
+        public abstract bool InTrigger(Vector3 position, int resultCount = 1, bool callbacks = true);
 
         /// <summary>
         /// Checks if there's anything in trigger.
@@ -48,7 +48,7 @@ namespace Trigger
         /// <param name="transform">Trigger's center by transform. (This parameter will be ignored if trigger has a Center Object defined)</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns>Returns true if there's anything in trigger. Returns false otherwise.</returns>
-        public abstract bool InTrigger(Transform transform, bool callbacks = true);
+        public abstract bool InTrigger(Transform transform, int resultCount = 1, bool callbacks = true);
 
         /// <summary>
         /// Checks if there's anything in trigger.
@@ -56,7 +56,7 @@ namespace Trigger
         /// <param name="gameObject">Trigger's center by game object. (This parameter will be ignored if trigger has a Center Object defined)</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns>Returns true if there's anything in trigger. Returns false otherwise.</returns>
-        public abstract bool InTrigger(GameObject gameObject, bool callbacks = true);
+        public abstract bool InTrigger(GameObject gameObject, int resultCount = 1, bool callbacks = true);
 
         /// <summary>
         /// Checks if there's something in trigger and gets a component from It.
@@ -66,7 +66,7 @@ namespace Trigger
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <param name="debugError">Debug failed tries to get <typeparamref name="T"/> when it's true. (True by default)</param>
         /// <returns>Returns the component got by trigger.</returns>
-        public abstract T InTrigger<T>(Vector3 position, bool callbacks = true, bool debugError = true) where T : Component;
+        public abstract T InTrigger<T>(Vector3 position, int resultCount = 1, bool callbacks = true, bool debugError = true) where T : Component;
 
         /// <summary>
         /// Checks if there's something in trigger and gets a component from It.
@@ -76,7 +76,7 @@ namespace Trigger
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <param name="debugError">Debug failed tries to get <typeparamref name="T"/> when it's true. (True by default)</param>
         /// <returns>Returns the component got by trigger.</returns>
-        public abstract T InTrigger<T>(Transform transform, bool callbacks = true, bool debugError = true) where T : Component;
+        public abstract T InTrigger<T>(Transform transform, int resultCount = 1, bool callbacks = true, bool debugError = true) where T : Component;
 
         /// <summary>
         /// Checks if there's something in trigger and gets a component from It.
@@ -86,7 +86,7 @@ namespace Trigger
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <param name="debugError">Debug failed tries to get <typeparamref name="T"/> when it's true. (True by default)</param>
         /// <returns>Returns the component got by trigger.</returns>
-        public abstract T InTrigger<T>(GameObject gameObject, bool callbacks = true, bool debugError = true) where T : Component;
+        public abstract T InTrigger<T>(GameObject gameObject, int resultCount = 1, bool callbacks = true, bool debugError = true) where T : Component;
         #endregion
 
         protected void InvokeCallbacks(bool isIn)

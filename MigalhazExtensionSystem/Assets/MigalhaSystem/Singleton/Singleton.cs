@@ -13,7 +13,7 @@ namespace MigalhaSystem.Singleton
 
         protected virtual void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (GetInstance(false) != null && GetInstance(false) != this)
             {
                 Destroy(gameObject);
             }

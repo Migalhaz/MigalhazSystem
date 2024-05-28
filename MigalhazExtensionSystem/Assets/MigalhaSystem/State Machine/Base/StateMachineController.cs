@@ -15,23 +15,18 @@ namespace MigalhaSystem.StateMachine
         public AbstractState m_LastState => m_lastState;
         #endregion
 
-        protected virtual void Start()
-        {
-            StartState();
-        }
-
-        public virtual void StartState()
+        protected virtual void StartController()
         {
             m_currentState = null;
             m_lastState = null;
             ForceSwitchState(FirstState());
         }
-        protected abstract AbstractState FirstState();
 
+        protected abstract AbstractState FirstState();
 
         protected virtual void Update()
         {
-            m_currentState?.UpdateState(this);
+            m_currentState?.UpdateStateLogic(this);
         }
 
         protected virtual void FixedUpdate()
@@ -44,84 +39,37 @@ namespace MigalhaSystem.StateMachine
             m_currentState?.LateUpdateState(this);
         }
 
-        public virtual void SwitchState(AbstractState newState)
+        protected virtual void OnDestroy()
         {
+            m_currentState?.ExitStateLogic(this);
+            m_currentState = null;
+            m_lastState = null;
+        }
+
+        public virtual void SwitchState(AbstractState newState, bool restartState = false)
+        {
+            if (m_currentState == newState && !restartState) return;
             if (m_currentState is not null)
             {
-                if (!m_currentState.m_CanBeInterrupt)
-                {
-                    return;
-                }
-                m_currentState.ExitState(this);
+                if (!m_currentState.m_CanBeInterrupt) return;
+                m_currentState.ExitStateLogic(this);
             }
             m_lastState = m_currentState;
             m_currentState = newState;
-            m_currentState.EnterState(this);
+            m_currentState.EnterStateLogic(this);
         }
 
-        public virtual void ForceSwitchState(AbstractState newState)
+        public virtual void ForceSwitchState(AbstractState newState, bool restartState = false)
         {
-            if (m_currentState is not null)
-            {
-                m_currentState.ExitState(this);
-            }
+            if (m_currentState == newState && !restartState) return;
+            if (m_currentState is not null) m_currentState.ExitStateLogic(this);
             m_lastState = m_currentState;
             m_currentState = newState;
-            m_currentState.EnterState(this);
+            m_currentState.EnterStateLogic(this);
         }
 
-        public virtual void SwitchStateByBool(bool verification, AbstractState trueState, AbstractState falseState, bool forceSwitch = false)
-        {
-            AbstractState newState = verification ? trueState : falseState;
-
-            if (!forceSwitch)
-            {
-                SwitchState(newState);
-            }
-            else
-            {
-                ForceSwitchState(newState);
-            }
-        }
-
-        public virtual void SwitchStateByBool<T1, T2>(bool verification, T1 trueState, T2 falseState, bool forceSwitch = false) 
-            where T1 : AbstractState where T2 : AbstractState
-        {
-            AbstractState newState;
-
-            if (verification)
-            {
-                if (CheckCurrentState<T1>()) return;
-                newState = trueState;
-            }
-            else
-            {
-                if (CheckCurrentState<T2>()) return;
-                newState = falseState;
-            }
-            if (!forceSwitch)
-            {
-                SwitchState(newState);
-            }
-            else
-            {
-                ForceSwitchState(newState);
-            }
-        }
-
-        public bool CheckCurrentState<T>() where T : AbstractState
-        {
-            return m_currentState is T;
-        }
-
-        public bool CheckLastState<T>() where T : AbstractState
-        {
-            return m_lastState is T;
-        }
-
-        public static bool CheckState<T>(AbstractState state) where T : AbstractState
-        {
-            return state is T;
-        }
+        public bool CheckCurrentState<T>() where T : AbstractState => m_currentState is T;
+        public bool CheckLastState<T>() where T : AbstractState => m_lastState is T;
+        public static bool CheckState<T>(AbstractState state) where T : AbstractState => state is T;
     }
 }

@@ -1,4 +1,3 @@
-//using System;
 using UnityEngine;
 using System.Linq;
 using Trigger.Core;
@@ -43,7 +42,7 @@ namespace Trigger.System2D
         /// <param name="collider2D">Trigger's center by collider2D. (This parameter will be ignored if trigger has a Center Object defined)</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns>Returns true if there's anything in trigger. Returns false otherwise.</returns>
-        public abstract bool InTrigger(Collider2D collider2D, bool callbacks = true);
+        public abstract bool InTrigger(Collider2D collider2D, int resultCount = 1, bool callbacks = true);
 
         /// <summary>
         /// Checks if there's anything in trigger and get all colliders2D in It.
@@ -52,7 +51,7 @@ namespace Trigger.System2D
         /// <param name="collider2Ds">List of colliders2D in trigger</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns></returns>
-        public abstract bool InTrigger(Vector3 position, out List<Collider2D> collider2Ds, bool callbacks = true);
+        public abstract bool InTrigger(Vector3 position, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true);
         /// <summary>
         /// Checks if there's anything in trigger and get all colliders2D in It.
         /// </summary>
@@ -60,7 +59,7 @@ namespace Trigger.System2D
         /// <param name="collider2Ds">List of colliders2D in trigger</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns></returns>
-        public abstract bool InTrigger(Transform transform, out List<Collider2D> collider2Ds, bool callbacks = true);
+        public abstract bool InTrigger(Transform transform, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true);
         /// <summary>
         /// Checks if there's anything in trigger and get all colliders2D in It.
         /// </summary>
@@ -68,7 +67,7 @@ namespace Trigger.System2D
         /// <param name="collider2Ds">List of colliders2D in trigger</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns></returns>
-        public abstract bool InTrigger(GameObject gameObject, out List<Collider2D> collider2Ds, bool callbacks = true);
+        public abstract bool InTrigger(GameObject gameObject, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true);
         /// <summary>
         /// Checks if there's anything in trigger and get all colliders2D in It.
         /// </summary>
@@ -76,7 +75,7 @@ namespace Trigger.System2D
         /// <param name="collider2Ds">List of colliders2D in trigger</param>
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <returns></returns>
-        public abstract bool InTrigger(Collider2D collider2D, out List<Collider2D> collider2Ds, bool callbacks = true);
+        public abstract bool InTrigger(Collider2D collider2D, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true);
 
 
         /// <summary>
@@ -87,7 +86,7 @@ namespace Trigger.System2D
         /// <param name="callbacks">Invoke trigger's callbacks when it's true. (True by default)</param>
         /// <param name="debugError">Debug failed tries to get <typeparamref name="T"/> when it's true. (True by default)</param>
         /// <returns>Returns the component got by trigger.</returns>
-        public abstract T InTrigger<T>(Collider2D collider2D, bool callbacks = true, bool debugError = true) where T : Component;
+        public abstract T InTrigger<T>(Collider2D collider2D, int resultCount = 1, bool callbacks = true, bool debugError = true) where T : Component;
         public abstract void DrawTrigger(Collider2D collider2D);
         #endregion
     }
@@ -98,10 +97,11 @@ namespace Trigger.System2D
         #region Variables
         [SerializeField, Min(0)] Vector2 m_triggerSize = Vector2.one;
         [SerializeField] float m_triggerAngle = 0f;
-
+        Collider2D[] m_results;
         #region Getters
         public Vector2 m_TriggerSize => m_triggerSize;
         public float m_TriggerAngle => m_triggerAngle;
+        public Collider2D[] m_Results => m_results;
         #endregion
 
         #endregion
@@ -136,16 +136,16 @@ namespace Trigger.System2D
             {
                 position = m_CenterObject.position;
             }
-            Matrix4x4 rotationMatrix = Matrix4x4.TRS(position + m_TriggerOffset.ToVector3(), Quaternion.Euler(0f, 0f, m_TriggerAngle), Vector3.one);
-            Gizmos.matrix = rotationMatrix;
-            Gizmos.color = InTrigger(position, false) ? m_DrawSettings.m_InColor : m_DrawSettings.m_OutColor;
+            Gizmos.matrix = Matrix4x4.TRS(position + m_TriggerOffset.ToVector3(), Quaternion.Euler(0f, 0f, m_TriggerAngle), Vector3.one);
+            Gizmos.color = InTrigger(position, callbacks: false) ? m_DrawSettings.m_InColor : m_DrawSettings.m_OutColor;
+
             if (m_DrawSettings.m_DrawSolid)
             {
-                Gizmos.DrawCube(position, m_triggerSize);
+                Gizmos.DrawCube(Vector2.zero, m_triggerSize);
             }
             else
             {
-                Gizmos.DrawWireCube(position, m_triggerSize);
+                Gizmos.DrawWireCube(Vector2.zero, m_triggerSize);
             }
         }
 
@@ -166,13 +166,19 @@ namespace Trigger.System2D
         #endregion
 
         #region InTrigger
-        public override bool InTrigger(Vector3 position, bool callbacks = true)
+        public override bool InTrigger(Vector3 position, int resultCount = 1, bool callbacks = true)
         {
             if (m_CenterObject != null)
             {
                 position = m_CenterObject.position;
             }
-            bool isIn = Physics2D.OverlapBox(position + m_TriggerOffset.ToVector3(), m_TriggerSize, m_triggerAngle, m_TriggerLayerMask);
+
+            if (m_results == null || m_results.Length != resultCount)
+            {
+                m_results = new Collider2D[resultCount];
+            }
+
+            bool isIn = Physics2D.OverlapBoxNonAlloc(position + m_TriggerOffset.ToVector3(), m_TriggerSize, m_triggerAngle, m_results, m_TriggerLayerMask) > 0;
             if (callbacks)
             {
                 InvokeCallbacks(isIn);
@@ -181,79 +187,79 @@ namespace Trigger.System2D
             return isIn;
         }
 
-        public override bool InTrigger(Transform transform, bool callbacks = true)
+        public override bool InTrigger(Transform transform, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(transform.position, callbacks);
+            return InTrigger(transform.position, resultCount, callbacks);
         }
 
-        public override bool InTrigger(GameObject gameObject, bool callbacks = true)
+        public override bool InTrigger(GameObject gameObject, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(gameObject.transform.position, callbacks);
+            return InTrigger(gameObject.transform.position, resultCount, callbacks);
         }
 
-        public override bool InTrigger(Collider2D collider2D, bool callbacks = true)
+        public override bool InTrigger(Collider2D collider2D, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(collider2D.transform.position, callbacks);
+            return InTrigger(collider2D.transform.position, resultCount, callbacks);
         }
 
-        public override T InTrigger<T>(Vector3 position, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(Vector3 position, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
             if (m_CenterObject != null)
             {
                 position = m_CenterObject.position;
             }
-            if (!InTrigger(position, callbacks)) return null;
-
-            GameObject g = Physics2D.OverlapBox(position + m_TriggerOffset.ToVector3(), m_TriggerSize, m_triggerAngle, m_TriggerLayerMask).gameObject;
-            if (g.TryGetComponent(out T component))
+            if (!InTrigger(position, resultCount, callbacks)) return null;
+            foreach (Collider2D r in m_results)
             {
-                return component;
+                if (r.TryGetComponent(out T component)) return component;
             }
+            
             if (debugErrors)
             {
-                Debug.LogWarning($"<color=yellow>Warning:</color> The Game Object: <<color=#DC143C>{g.name}</color>> doesn't have: <<color=#DC143C>{typeof(T).Name}</color>> as component");
+                Debug.LogWarning($"<color=yellow>Warning:</color> None objects in results have: <<color=#DC143C>{typeof(T).Name}</color>> as a component");
             }
             return null;
         }
 
-        public override T InTrigger<T>(Transform transform, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(Transform transform, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
-            return InTrigger<T>(transform.position, callbacks, debugErrors);
+            return InTrigger<T>(transform.position, resultCount, callbacks, debugErrors);
         }
 
-        public override T InTrigger<T>(GameObject gameObject, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(GameObject gameObject, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
-            return InTrigger<T>(gameObject.transform.position, callbacks, debugErrors);
+            return InTrigger<T>(gameObject.transform.position, resultCount, callbacks, debugErrors);
         }
 
-        public override T InTrigger<T>(Collider2D collider2D, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(Collider2D collider2D, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
-            return InTrigger<T>(collider2D.transform.position, callbacks, debugErrors);
+            return InTrigger<T>(collider2D.transform.position, resultCount, callbacks, debugErrors);
         }
 
-        public override bool InTrigger(Vector3 position, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(Vector3 position, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
             if (m_CenterObject != null)
             {
                 position = m_CenterObject.position;
             }
-            collider2Ds = Physics2D.OverlapBoxAll(position + m_TriggerOffset.ToVector3(), m_TriggerSize, m_TriggerAngle, m_TriggerLayerMask).ToList();
-            return InTrigger(position, callbacks);
+            bool result = InTrigger(position, resultCount, callbacks);
+            collider2Ds = m_results?.ToList();
+            return result;
         }
 
-        public override bool InTrigger(Transform transform, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(Transform transform, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(transform.position, out collider2Ds, callbacks);
+            return InTrigger(transform.position, out collider2Ds, resultCount, callbacks);
         }
 
-        public override bool InTrigger(GameObject gameObject, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(GameObject gameObject, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(gameObject.transform.position, out collider2Ds, callbacks);
+            return InTrigger(gameObject.transform.position, out collider2Ds, resultCount, callbacks);
         }
 
-        public override bool InTrigger(Collider2D collider2D, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(Collider2D collider2D, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(collider2D.transform.position, out collider2Ds, callbacks);
+            return InTrigger(collider2D.transform.position, out collider2Ds, resultCount, callbacks);
         }
         #endregion
 
@@ -266,9 +272,10 @@ namespace Trigger.System2D
     {
         #region Variables
         [SerializeField, Min(0)] float m_triggerRadius = 0.5f;
-
+        Collider2D[] m_results;
         #region Getters
         public float m_TriggerRadius => m_triggerRadius;
+        public Collider2D[] m_Results => m_results;
         #endregion
 
         #endregion
@@ -281,13 +288,17 @@ namespace Trigger.System2D
         }
 
         #region InTrigger
-        public override bool InTrigger(Vector3 position, bool callbacks = true)
+        public override bool InTrigger(Vector3 position, int resultCount = 1, bool callbacks = true)
         {
             if (m_CenterObject != null)
             {
                 position = m_CenterObject.position;
             }
-            bool isIn = Physics2D.OverlapCircle(position + m_TriggerOffset.ToVector3(), m_TriggerRadius, m_TriggerLayerMask);
+            if (m_results == null || m_results.Length != resultCount)
+            {
+                m_results = new Collider2D[resultCount];
+            }
+            bool isIn = Physics2D.OverlapCircleNonAlloc(position + m_TriggerOffset.ToVector3(), m_TriggerRadius, m_results, m_TriggerLayerMask) > 0;
             if (callbacks)
             {
                 InvokeCallbacks(isIn);
@@ -295,79 +306,82 @@ namespace Trigger.System2D
             return isIn;
         }
 
-        public override bool InTrigger(Transform transform, bool callbacks = true)
+        public override bool InTrigger(Transform transform, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(transform.position, callbacks);
+            return InTrigger(transform.position,  resultCount, callbacks);
         }
 
-        public override bool InTrigger(GameObject gameObject, bool callbacks = true)
+        public override bool InTrigger(GameObject gameObject, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(gameObject.transform.position, callbacks);
+            return InTrigger(gameObject.transform.position, resultCount, callbacks);
         }
 
-        public override bool InTrigger(Collider2D collider2D, bool callbacks = true)
+        public override bool InTrigger(Collider2D collider2D, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(collider2D.transform.position, callbacks);
+            return InTrigger(collider2D.transform.position, resultCount, callbacks);
         }
 
-        public override T InTrigger<T>(Vector3 position, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(Vector3 position, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
             if (m_CenterObject != null)
             {
                 position = m_CenterObject.position;
             }
-            if (!InTrigger(position, callbacks)) return null;
+            if (!InTrigger(position, resultCount, callbacks)) return null;
 
-            GameObject g = Physics2D.OverlapCircle(position + m_TriggerOffset.ToVector3(), m_TriggerRadius, m_TriggerLayerMask).gameObject;
-            if (g.TryGetComponent(out T component))
+            foreach (Collider2D r in m_results)
             {
-                return component;
+                if (r.TryGetComponent(out T component)) return component;
             }
+
             if (debugErrors)
             {
-                Debug.LogWarning($"<color=yellow>Warning:</color> The Game Object: <<color=#DC143C>{g.name}</color>> doesn't have: <<color=#DC143C>{typeof(T).Name}</color>> as component");
+                Debug.LogWarning($"<color=yellow>Warning:</color> None objects in results have: <<color=#DC143C>{typeof(T).Name}</color>> as a component");
             }
+
             return null;
         }
 
-        public override T InTrigger<T>(Transform transform, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(Transform transform, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
-            return InTrigger<T>(transform.position, callbacks, debugErrors);
+            return InTrigger<T>(transform.position, resultCount, callbacks, debugErrors);
         }
 
-        public override T InTrigger<T>(GameObject gameObject, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(GameObject gameObject, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
-            return InTrigger<T>(gameObject.transform.position, callbacks, debugErrors);
+            return InTrigger<T>(gameObject.transform.position, resultCount, callbacks, debugErrors);
         }
 
-        public override T InTrigger<T>(Collider2D collider2D, bool callbacks = true, bool debugErrors = true)
+        public override T InTrigger<T>(Collider2D collider2D, int resultCount = 1, bool callbacks = true, bool debugErrors = true)
         {
-            return InTrigger<T>(collider2D.transform.position, callbacks, debugErrors);
+            return InTrigger<T>(collider2D.transform.position, resultCount, callbacks, debugErrors);
         }
 
-        public override bool InTrigger(Vector3 position, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(Vector3 position, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
             if (m_CenterObject != null)
             {
                 position = m_CenterObject.position;
             }
-            collider2Ds = Physics2D.OverlapCircleAll(position + m_TriggerOffset.ToVector3(), m_TriggerRadius, m_TriggerLayerMask).ToList();
-            return InTrigger(position, callbacks); ;
+
+            bool result = InTrigger(position, resultCount, callbacks);
+            collider2Ds = m_results?.ToList();
+            return result;
         }
 
-        public override bool InTrigger(Transform transform, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(Transform transform, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(transform.position, out collider2Ds, callbacks);
+            return InTrigger(transform.position, out collider2Ds, resultCount, callbacks);
         }
 
-        public override bool InTrigger(GameObject gameObject, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(GameObject gameObject, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(gameObject.transform.position, out collider2Ds, callbacks);
+            return InTrigger(gameObject.transform.position, out collider2Ds, resultCount, callbacks);
         }
 
-        public override bool InTrigger(Collider2D collider2D, out List<Collider2D> collider2Ds, bool callbacks = true)
+        public override bool InTrigger(Collider2D collider2D, out List<Collider2D> collider2Ds, int resultCount = 1, bool callbacks = true)
         {
-            return InTrigger(collider2D.transform.position, out collider2Ds, callbacks);
+            return InTrigger(collider2D.transform.position, out collider2Ds, resultCount, callbacks);
         }
         #endregion
 
@@ -380,7 +394,7 @@ namespace Trigger.System2D
             {
                 _position = m_CenterObject.position;
             }
-            Gizmos.color = InTrigger(_position, false) ? m_DrawSettings.m_InColor : m_DrawSettings.m_OutColor;
+            Gizmos.color = InTrigger(_position, callbacks: false) ? m_DrawSettings.m_InColor : m_DrawSettings.m_OutColor;
 
             if (m_DrawSettings.m_DrawSolid)
             {
@@ -411,25 +425,4 @@ namespace Trigger.System2D
 
         #endregion
     }
-
-    //[System.Serializable]
-    //public class RaycastTrigger2D : System2D
-    //{
-    //    [SerializeField, Min(0)] float m_raycastDistance;
-    //    [SerializeField, Range(0f, 360f)] float m_raycastAngle;
-    //    public float m_RaycastDistance => m_raycastDistance;
-
-    //    public void SetRaycastDistance(float raycastDistance) => m_raycastDistance = raycastDistance;
-    //    public void SetRaycastAngle(float newAngle) => m_raycastAngle = newAngle;
-    //    public override bool InTrigger(Vector3 position, bool callbacks = true)
-    //    {
-    //        if (m_CenterObject != null) position = m_CenterObject.position;
-    //        //bool isIn = Physics2D.OverlapCircle(position + m_TriggerOffset.ToVector3(), m_TriggerRadius, m_TriggerLayerMask);
-    //        bool isIn = Physics2D.Raycast(position, m_raycastAngle.DirectionFromAngle(), m_raycastDistance, m_TriggerLayerMask);
-
-
-    //        if (callbacks) InvokeCallbacks(isIn);
-    //        return isIn;
-    //    }
-    //}
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace MigalhaSystem.SaveSystem
 {
-    public class SaveSystemDemo : MonoBehaviour
+    public class JsonSaveSystemDemo : MonoBehaviour
     {
         [SerializeField] DemoHero m_player;
         [SerializeField] bool m_encrypted;

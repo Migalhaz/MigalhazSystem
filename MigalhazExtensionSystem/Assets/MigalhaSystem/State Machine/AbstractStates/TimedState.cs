@@ -11,7 +11,7 @@ namespace MigalhaSystem.StateMachine
         public override void EnterState(StateMachineController stateMachineController)
         {
             base.EnterState(stateMachineController);
-            m_timer.ActiveTimer(true);
+            //m_timer.ActiveTimer(true);
         }
         public override void UpdateState(StateMachineController stateMachineController)
         {
@@ -30,7 +30,7 @@ namespace MigalhaSystem.StateMachine
         public override void EnterState(StateMachineController stateMachineController)
         {
             base.EnterState(stateMachineController);
-            m_timer.ActiveTimer(true);
+            //m_timer.ActiveTimer(true);
         }
         public override void UpdateState(StateMachineController stateMachineController)
         {
