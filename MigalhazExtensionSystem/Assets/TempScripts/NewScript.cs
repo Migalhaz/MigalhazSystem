@@ -1,75 +1,55 @@
+using MigalhaSystem.Analysis;
 using MigalhaSystem.Extensions;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MigalhaSystem
+
+public class Player : MonoBehaviour
 {
-    public class NewScript : MonoBehaviour, IOnRemoveComponent
+    List<Command> commands = new List<Command>();
+    private void Update()
     {
-        private void Start()
+        Vector2 direction = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+
+        if (direction.magnitude != 0)
         {
-            Benchmark.TimeExecution(() => While(100), "Label");
-            Benchmark.TimeExecution(() => While(1000), "2");
-            Benchmark.TimeExecution(() => While(10000), "3");
-            Benchmark.TimeExecution(() => While(100000), "4");
-            Benchmark.TimeExecution(() => While(1000000), "5");
-            Benchmark.TimeExecution(() => While(10000000), "6");
-            Benchmark.TimeExecution(() => While(100000000), "7");
+            MoveCommand moveCommand = new MoveCommand(transform, direction);
+            commands.Add(moveCommand);
+            moveCommand.Do();
         }
 
-        private void Update()
+        if (Input.GetKeyDown(KeyCode.U) && commands.Count > 0)
         {
-        }
-
-        private void FixedUpdate()
-        {
-        }
-
-        void While(int value)
-        {
-            int i = 0;
-            while (i < value)
-            {
-                //int result = value.RangeBy0();
-                i++;
-            }
-        }
-
-        public void OnRemoveComponent()
-        {
-            Debug.Log($"UOU ESTOU SENDO REMOVIDO {gameObject.name}");
+            int index = commands.Count - 1;
+            commands[index].Undo();
+            commands.RemoveAt(index);
         }
     }
+}
+public abstract class Command
+{
+    
+    public abstract void Do();
+    public abstract void Undo();
+}
 
-    [System.Serializable]
-    public class Bitmask
+public class MoveCommand : Command
+{
+    Transform transform;
+    Vector3 direcao;
+    public MoveCommand(Transform transform, Vector3 direcao)
     {
-        [SerializeField] List<BitmaskItem> items;
-
-        public List<BitmaskItem> GetItems(int bitmask)
-        {
-            List<BitmaskItem> result = new List<BitmaskItem>();
-            foreach (BitmaskItem item in items)
-            {
-
-            }
-
-            return result;
-        }
+        this.transform = transform;
+        this.direcao = direcao;
     }
 
-    [System.Serializable]
-    public class BitmaskItem
+    public override void Do()
     {
-        [field: SerializeField, HideInInspector]
-        public string tag { get; private set; }
-        int bitmask;
-        [SerializeField] string name;
-        public void UpdateBitMask(float newValue)
-        {
-            bitmask = (int)newValue;
+        transform.position += direcao;
+    }
 
-            tag = $"{bitmask}: {name}";
-        }
+    public override void Undo()
+    {
+        transform.position -= direcao;
     }
 }

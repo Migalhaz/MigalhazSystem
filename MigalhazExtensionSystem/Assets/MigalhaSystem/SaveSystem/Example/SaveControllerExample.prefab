@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6291977396225527085
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6291977396225527090}
+  - component: {fileID: 6291977396225527089}
+  m_Layer: 0
+  m_Name: SaveControllerExample
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6291977396225527090
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6291977396225527085}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.45560956, y: 0.96720546, z: -0.11135931}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6291977396225527089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6291977396225527085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 409bef5423b5885499f3e4d58d991ca1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_currentSaveSlot: 0
+  m_saveOnLoadError: 1
+  m_heroSave:
+    m_fileName: Hero
+    m_SaveObject:
+      name: Hero Name
+      id: 0
+      powersIds: 
+      xp: 0
+      speed:
+        attributeIndex: 0
+        attributeLevel: 0
+      health:
+        attributeIndex: 1
+        attributeLevel: 0
+      power:
+        attributeIndex: 2
+        attributeLevel: 0
+    m_strategy: {fileID: 11400000, guid: 7dfa159415cc9cf4599bcd8d5401cdaf, type: 2}
+  m_foo:
+    m_fileName: Foo
+    m_SaveObject:
+      a: rebtryb hty
+      b: -1047
+      c: -17.82
+      d: 0
+      e: 102
+    m_strategy: {fileID: 11400000, guid: 77c6e928d2de2994db373425c1535c45, type: 2}
