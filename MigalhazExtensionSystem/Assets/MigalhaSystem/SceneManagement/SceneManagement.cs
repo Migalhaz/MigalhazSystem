@@ -17,7 +17,7 @@ namespace MigalhaSystem.SceneManagement
 
         private void Start()
         {
-			SceneManager.LoadScene(m_startScene.buildIndex);
+			SceneManager.LoadScene(m_startScene.BuildIndex);
         }
     }
 }

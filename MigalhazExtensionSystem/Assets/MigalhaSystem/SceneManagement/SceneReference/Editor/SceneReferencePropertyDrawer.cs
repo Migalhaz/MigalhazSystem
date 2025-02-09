@@ -8,39 +8,47 @@ namespace MigalhaSystem.SceneManagement
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            var assetScene = property.FindPropertyRelative("m_scene");
+            SerializedProperty assetScene = property.FindPropertyRelative("m_scene");
+            SerializedProperty scenePath = property.FindPropertyRelative("m_path");
+            SerializedProperty sceneName = property.FindPropertyRelative("m_name");
+            SerializedProperty sceneBuildIndex = property.FindPropertyRelative("m_buildIndex");
+            SerializedProperty sceneGuid = property.FindPropertyRelative("m_guid");
+
             assetScene.objectReferenceValue = EditorGUI.ObjectField(position, label, assetScene.objectReferenceValue, typeof(SceneAsset), false);
 
-            var scenePath = property.FindPropertyRelative("m_path");
-            var sceneName = property.FindPropertyRelative("m_name");
-            var sceneBuildIndex = property.FindPropertyRelative("m_buildIndex");
-            var validScene = property.FindPropertyRelative("m_validScene");
-
-            if (assetScene != null && assetScene.objectReferenceValue is SceneAsset)
+            if (assetScene.objectReferenceValue == null)
             {
+                InvalidScene();
+                return;
+            }
+            if (!(assetScene.objectReferenceValue is SceneAsset))
+            {
+                InvalidScene();
+                return;
+            }
 
-                scenePath.stringValue = AssetDatabase.GetAssetPath(assetScene.objectReferenceValue);
-                sceneName.stringValue = assetScene.objectReferenceValue.name;
-                GUID assetGuid = AssetDatabase.GUIDFromAssetPath(scenePath.stringValue);
+            scenePath.stringValue = AssetDatabase.GetAssetPath(assetScene.objectReferenceValue);
+            sceneName.stringValue = assetScene.objectReferenceValue.name;
+            sceneGuid.stringValue = AssetDatabase.GUIDFromAssetPath(scenePath.stringValue).ToString();
 
-                for (int i = 0; i < EditorBuildSettings.scenes.Length; i++)
+            sceneBuildIndex.intValue = -1;
+            GUID assetGuid = new GUID(sceneGuid.stringValue);
+            for (int i = 0; i < EditorBuildSettings.scenes.Length; i++)
+            {
+                if (EditorBuildSettings.scenes[i].guid == assetGuid)
                 {
-                    if (EditorBuildSettings.scenes[i].guid != assetGuid)
-                    {
-                        sceneBuildIndex.intValue = -1;
-                        continue;
-                    }
                     sceneBuildIndex.intValue = i;
                     break;
                 }
-                validScene.boolValue = true;
             }
-            else
+
+            void InvalidScene()
             {
+                assetScene.objectReferenceValue = null;
                 scenePath.stringValue = string.Empty;
                 sceneName.stringValue = string.Empty;
+                sceneGuid.stringValue = string.Empty;
                 sceneBuildIndex.intValue = -1;
-                validScene.boolValue = false;
             }
         }
     }

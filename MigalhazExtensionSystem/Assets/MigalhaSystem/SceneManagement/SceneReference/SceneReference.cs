@@ -9,14 +9,36 @@ namespace MigalhaSystem.SceneManagement
 		[SerializeField] string m_path; 
 		[SerializeField] string m_name;
 		[SerializeField] int m_buildIndex;
-		[SerializeField] bool m_validScene;
+		[SerializeField] string m_guid;
 
-		public int buildIndex => m_buildIndex;
-		public string path => m_path;
-		public string name => m_name;
-		public bool validScene => m_validScene;
+		public int BuildIndex => m_buildIndex;
+		public string Path => m_path;
+		public string Name => m_name;
+		public string Guid => m_guid;
 
-		public static implicit operator int(SceneReference sceneReference) => sceneReference.m_buildIndex;
-		public static implicit operator string(SceneReference sceneReference) => sceneReference.m_name;
+		public bool ValidScene
+		{
+			get
+			{
+				if (m_scene == null) return false;
+				if (string.IsNullOrWhiteSpace(m_path)) return false;
+				if (string.IsNullOrWhiteSpace(m_name)) return false;
+				if (string.IsNullOrWhiteSpace(m_guid)) return false;
+				if (m_buildIndex <= -1) return false;
+				return true;
+			}
+		}
+
+		public static explicit operator int(SceneReference sceneReference)
+		{
+			if (!sceneReference.ValidScene) return -1;
+			return sceneReference.BuildIndex;
+		}
+
+		public static explicit operator string(SceneReference sceneReference)
+		{
+            if (!sceneReference.ValidScene) return string.Empty;
+            return sceneReference.Name;
+        }
     }
 }

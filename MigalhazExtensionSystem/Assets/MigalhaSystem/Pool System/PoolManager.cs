@@ -1,8 +1,6 @@
 using MigalhaSystem.Extensions;
 using MigalhaSystem.Singleton;
-using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 namespace MigalhaSystem.Pool
@@ -11,7 +9,7 @@ namespace MigalhaSystem.Pool
     {
         [SerializeField, HideInInspector] bool m_removeEmptyPool = true;
         [SerializeField] List<Pool> m_pools = new List<Pool>();
-        [SerializeField] List<PoolCollection> m_poolCollections;
+        [SerializeField] List<PoolCollection> m_poolCollections = new List<PoolCollection>();
 
         public bool m_RemoveEmptyPool { get { return m_removeEmptyPool; } set { m_removeEmptyPool = value; } }
         public List<Pool> m_Pools => m_pools;
@@ -32,12 +30,16 @@ namespace MigalhaSystem.Pool
             {
                 if (pool.m_PoolData == null)
                 {
+#if DEBUG
                     Debug.LogError("Empty pool found!", this);
+#endif
                     continue;
                 }
                 if (startedPools.Exists(x => x.m_PoolData == pool.m_PoolData))
                 {
+#if DEBUG
                     Debug.LogError("Duplicate pool found!", this);
+#endif
                     duplicatePool.Add(pool);
                     continue;
                 }
@@ -51,7 +53,7 @@ namespace MigalhaSystem.Pool
         {
             string NormalizeParentName()
             {
-                if (pool.m_PoolData.name.ToUpper().EndsWith("POOL")) return pool.m_PoolData.name.Capitalize();
+                if (pool.m_PoolData.name.ToUpper().Contains("POOL")) return pool.m_PoolData.name.Capitalize();
                 return $"{pool.m_PoolData.name} Pool".Capitalize();
             }
 
@@ -71,17 +73,23 @@ namespace MigalhaSystem.Pool
             {
                 if (availablePools == null)
                 {
+#if DEBUG
                     if (_debugErrors) Debug.LogError("No pool found!");
+#endif
                     return false;
                 }
                 if (availablePools.Count <= 0)
                 {
+#if DEBUG
                     if (_debugErrors) Debug.LogError("No pool found!");
+#endif
                     return false;
                 }
                 if (availablePools.Count > 1)
                 {
+#if DEBUG
                     if (_debugErrors) Debug.LogError("More than 1 pool found!");
+#endif
                     return false;
                 }
                 return true;       
@@ -328,6 +336,9 @@ namespace MigalhaSystem.Pool
         List<GameObject> m_freeObjects;
         List<GameObject> m_inUseObjects;
         float m_idleTime = 0f;
+
+        Dictionary<GameObject, List<Component>> m_components;
+
         #region Getters
         public Transform m_PoolParent => m_poolParent;
         public PoolData m_PoolData => m_poolData;
@@ -357,6 +368,7 @@ namespace MigalhaSystem.Pool
             m_freeObjects = new List<GameObject>();
             m_inUseObjects = new List<GameObject>();
             m_poolParent = null;
+            m_components = new Dictionary<GameObject, List<Component>>();
         }
         public bool ComparePoolData(PoolData _poolData) => m_poolData == _poolData;
         public void SetupPool(Transform _parent)
@@ -365,6 +377,7 @@ namespace MigalhaSystem.Pool
             m_inUseObjects = new List<GameObject>();
             m_poolParent = _parent;
             m_idleTime = 0;
+            m_components = new Dictionary<GameObject, List<Component>>();
         }
         public void UpdateIdleTime(float deltaTime)
         {
@@ -444,8 +457,38 @@ namespace MigalhaSystem.Pool
         }
         public T PullObject<T>(System.Action<GameObject> action = null) where T : Component
         {
-            if (PullObject(action).TryGetComponent(out T component)) return component;
+            GameObject gameObject = PullObject(action);
+            T newComponent = null;
+            m_components.Remove(null);
+
+            if (!m_components.ContainsKey(gameObject))
+            {
+                if (gameObject.TryGetComponent(out newComponent))
+                {
+                    m_components.Add(gameObject, new List<Component>() { newComponent });
+                    return newComponent;
+                }
+#if DEBUG
+                Debug.LogError($"{typeof(T)} component not found!");
+#endif                
+                return null;
+            }
+
+            List<Component> components = m_components[gameObject];
+            components.RemoveAll(x => x == null);
+            foreach (var c in components)
+            {
+                if (c is T) return c as T;
+            }
+
+            if (gameObject.TryGetComponent(out newComponent))
+            {
+                components.Add(newComponent);
+                return newComponent;
+            }
+#if DEBUG
             Debug.LogError($"{typeof(T)} component not found!");
+#endif
             return null;
         }
         public List<GameObject> PullAllObjects(System.Action<GameObject> action = null)

@@ -821,41 +821,5 @@ namespace MigalhaSystem.Extensions
             else Debug.Log(msg, context);
 #endif
         }
-        public static void Log(string message)
-        {
-#if DEBUG
-            Debug.Log(message);
-#endif
-        }
-        public static void Log(string message, Object context)
-        {
-#if DEBUG
-            Debug.Log(message, context);
-#endif
-        }
-        public static void LogWarning(string message)
-        {
-#if DEBUG
-            Debug.LogWarning(message);
-#endif
-        }
-        public static void LogWarning(string message, Object context)
-        {
-#if DEBUG
-            Debug.LogWarning(message, context);
-#endif
-        }
-        public static void LogError(string message)
-        {
-#if DEBUG
-            Debug.LogError(message);
-#endif
-        }
-        public static void LogError(string message, Object context)
-        {
-#if DEBUG
-            Debug.LogError(message, context);
-#endif
-        }
     }
 }
